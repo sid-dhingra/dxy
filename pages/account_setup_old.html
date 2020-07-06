@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- Material Icons -->
+  <link href='https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Material+Icons' rel="stylesheet">
+  <!-- Vuetify -->
+  <link href="https://unpkg.com/vuetify/dist/vuetify.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+</head>
+
+<body>
+  <div id="app"
+    v-on:click="handle_click($event)"
+  >    
+    <v-app id="inspire"> 
+    <main>
+      <!-- TOOLBAR -->
+      <v-toolbar 
+        color="#062E60"
+        fixed
+        app
+      >
+        <v-img src="images/dxy_full_white.png" height=40 contain position=left></v-img>
+        <!-- <v-toolbar-title class="caption" style="color: #FAFAFA">{{title}}</v-toolbar-title> -->
+        <v-spacer></v-spacer>
+        <v-chip color="#A0E6FF">Your trial expires on July 30, 2019</v-chip>
+      </v-toolbar>
+    </main>
+    </v-app>
+  </div>
+
+<script src="https://unpkg.com/vue/dist/vue.js"></script>
+<script src="https://unpkg.com/vuetify/dist/vuetify.js"></script>
+<script>
+  var app =  new Vue({
+        el: '#app',
+        data () {
+          return {
+            state: "blank"
+          }
+        },
+        methods: {
+      },
+      mounted: function () {
+      }
+    });
+ </script>
+
+</body>
+</html>

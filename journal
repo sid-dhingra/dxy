@@ -1,0 +1,559 @@
+4/14
+
+think about building the filter first. i think this will be good for learning and the most complicated part for now.
+
+we have the following parameters of each filter:
+- indent (we plan on using a tree directory structure to navigate to filters, so we want to somehow show nesting of some sort)
+- collapse vs. expand (each filter needs to be expandable and collapsable so the user can quickly move through the filters, note the collapse expand may be global and we may only allow some number of expanded filters within a container?)
+- the actual filter data (this is the data that the user can select within the filter, this probably should be reflected somewhere in the three structure for the user's ease of convenience. for example each filter container has some number associated with it of how many filters are applied within that container)
+
+then separately we have a table or list of applied filters that is separate from the filter list. this is for quick access to read.
+
+then separately we have the results block which shows the results from applying the filter. we can assume now that we only update the results block when the user changes the applied filters. any change to the applied filters will invalidate the results. we probably want to make this also work if in the future we want to update the results dynamically. for now i don't think this is necessary.
+
+vue adds keys in data to the vue instance and then you access the vue specific properties using the vm.$_ syntax
+
+a vue watch property is useful for expensive operations
+
+can turn off groups using the template wrapper
+
+probably want to use key for unique elements for v conditionals
+
+look at v-if vs. v-show for speed. this is applicable for the filter elements
+
+v-if and v-for priorities - keep in mind...
+
+4/15
+use a key with v-for whenever possible
+
+array operations need special javascript function calls for reactivity due to JS limitations and detection.
+
+cannot reactively add properties to a vue's root level, but it works for nested properties such as an object defined in $data
+
+use js assign function to overlap objects with properties
+
+we can v-for over a computed an array
+
+can use v-for on a <template/> to render a block that consists of multiple elements
+
+keycodes are pretty cool and you can configure using the global configuration object
+
+v-model does input and text area elements, basically user data, probably won't need this much except for user login and manual entry to fields which i guess is definitely possible. update: actually it's for all form inputs. interesting! v-model helps us bind inputs to things that can be rendered.
+
+provide disabled option with empty value so it works on iOS
+
+can use v-for to define options within a <select/> element
+
+https://www.reddit.com/r/vuejs/comments/7sfdvd/how_to_use_materializecss_in_vuejs/
+
+https://vuetifyjs.com/en/
+
+4/16
+https://scotch.io/tutorials/build-a-single-page-time-tracking-app-with-vue-js-introduction
+https://medium.com/frontend-fun/js-vanilla-script-spa-1b29b43ea475
+https://css-tricks.com/snippets/css/complete-guide-grid/
+https://medium.com/actualize-network/prototyping-with-vue-js-and-bootstrap-2404efe93d6
+http://jsfiddle.net/4sR2G/2333/
+https://www.sitepoint.com/dom-manipulation-vanilla-javascript-no-jquery/
+https://nightcatsama.github.io/vue-slider-component/example/#QuickStart
+https://forum.vuejs.org/t/recommended-range-slider-component/11075
+https://vuejsdevelopers.com/2017/05/20/vue-js-safely-jquery-plugin/
+
+4/25
+<!-- Group -->
+    <template v-if="filter.children.length === `butter`">
+        <v-list-tile>
+          <v-list-tile-content>
+            <v-list-tile-title>{{filter.title + " (group)"}}</v-list-tile-title>
+          </v-list-tile-content>
+        </v-list-tile>
+        <!-- <dxy-filter
+          v-for="child_filter in filter.children"
+          v-bind:key="child_filter.title"
+          v-bind:filter="child_filter"
+        >
+        </dxy-filter> -->
+    </template>
+     <!-- Primitive -->
+    <template v-else>
+      <v-list-tile>
+        <v-list-tile-content>
+          <v-list-tile-title>{{filter.title + " (primitive)"}}</v-list-tile-title>
+        </v-list-tile-content>
+      </v-list-tile>
+    </template>  
+
+need a toolbar above filter navigator to show applied filters
+
+we probably want a break out list when the user edits a filter
+
+probably want to sort the search suggested filters by most popular
+
+want a quick search clear button (x)
+
+maybe want buttons to expand all, collapse all, really anything convenient
+
+5/1
+https://stackoverflow.com/questions/27539262/whats-the-difference-between-align-content-and-align-items
+
+https://stackoverflow.com/questions/48535585/the-difference-between-justify-self-justify-items-and-justify-content-in-css-gr
+
+https://codepen.io/anon/pen/VxbMer
+
+https://developers.google.com/chart/interactive/docs/gallery/map
+
+5/2
+I think it makes sense to have two simultaneous sentences. This way the user never have to switch between absolute and percentile because we always show it anyways. 
+
+starting to use this to learn node/express:
+https://developer.mozilla.org/en-US/docs/Learn/Server-side/Express_Nodejs/development_environment
+
+use plain html with node js:
+https://www.quora.com/How-do-I-use-HTML-with-Express-Node-js-instead-of-jade
+
+probably want to replace the top left icon for the "add filters" section
+because it's confusing and makes it seem like the section can
+expand.
+
+5/4
+super useful info for client side fetching:
+https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch
+
+5/6
+running python on node:
+https://stackoverflow.com/questions/23450534/how-to-call-python-function-from-nodejs
+https://stackoverflow.com/questions/2043453/executing-python-multi-line-statements-in-the-one-line-command-line
+
+to jerry: 
+we need this format
+http://www.pythonforbeginners.com/system/python-sys-argv
+we can do whatever if we import
+
+user authentication
+https://medium.com/of-all-things-tech-progress/starting-with-authentication-a-tutorial-with-node-js-and-mongodb-25d524ca0359
+https://stackoverflow.com/questions/7990890/how-to-implement-login-auth-in-node-js
+https://hackernoon.com/authentication-as-a-service-an-honest-review-of-auth0-315277abcba1
+https://scotch.io/tutorials/building-and-securing-a-modern-backend-api
+https://auth0.com/docs/application-auth/current/client-side-web
+https://auth0.com/docs/quickstart/spa/vanillajs/05-token-renewal
+https://auth0.com/blog/building-and-authenticating-nodejs-apps/
+https://auth0.com/docs/hosted-pages/login
+
+there were 7 things
+1 - UI of app / jeffrey nam
+0 - python linking with app & sql db / jerry and nam
+0 - user accounts (link user to admin) (need to be careful of cyclic users) / nam (pending input from jeffrey)
+1 - trial periods (14 day default, custom maybe through us) / nam
+2 - logo/branding / nam
+1 - finalization of filters, types, names, copy / jeffrey and jerry
+1 - online payment / jerry
+2 - home webpage (layout and copy) / jeffrey
+3 - user tracking (log ins, query info) / nam
+3 - testing / jeffrey, jerry, nam
+3 - adwords API / jerry
+3 - map / jeffrey or jerry
+1 - onboarding / jeffrey
+3 - support email addresses / ??
+3 - terms and conditions / jeffrey
+3 - privacy policy (link on website and copy) / jeffrey
+
+sliders
+https://codepen.io/anon/pen/vjeorB
+https://refreshless.com/nouislider/
+
+stripe vue component
+https://github.com/fromatob/vue-stripe-elements
+
+python json:
+https://docs.python.org/2/library/json.html
+
+5/16
+can we get a zipAnd function that takes in a set of zips?
+
+5/20
+we need a way to handle user error? can we assume these people are willing to
+launch a campaign trusting our tool? i think a map is a decent way of 
+providing validation and trust.
+
+5/21
+https://tomasz.janczuk.org/2016/01/accept-stripe-payments-without-backend-using-webtasks.html
+https://stackoverflow.com/questions/400212/how-do-i-copy-to-the-clipboard-in-javascript?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
+
+8/28
+
+10/16
+HEROKU: Need buildpacks heroku/node and heroku/python.
+HEROKU: heroku create; git push heroku master;
+
+10/25
+https://medium.com/@bitshadow/how-basic-http-authentication-and-session-works-d29af9caec31
+https://stackoverflow.com/questions/20963273/spa-best-practices-for-authentication-and-session-management
+http://www.matasano.com/articles/javascript-cryptography/
+https://medium.com/lightrail/getting-token-authentication-right-in-a-stateless-single-page-application-57d0c6474e3
+https://stackoverflow.com/questions/30040804/is-this-a-secure-way-to-prevent-cross-site-request-forgery-csrf-attacks
+
+11/12
+DEBUG=demand-xy-web:* npm run devstart
+
+11/16
+git push origin master
+git push heroku master
+$ heroku buildpacks:clear
+$ heroku buildpacks:add heroku/nodejs
+$ heroku buildpacks:add heroku/python
+// Check for the current url 
+git remote -v
+
+// remove remote url
+git remote rm heroku
+
+// re-add the remote url
+git remote add heroku git@heroku.com:boiling-inlet-6957.git
+
+11/17
+https://medium.com/poka-techblog/the-best-way-to-store-secrets-in-your-app-is-not-to-store-secrets-in-your-app-308a6807d3ed
+https://medium.freecodecamp.org/how-to-securely-store-api-keys-4ff3ea19ebda
+https://devcenter.heroku.com/articles/config-vars
+
+11/28
+TODO: Fix known bug where a user may be invited to two organizations before
+veifying their account. In this case, the first invitation will include
+an invite link, then the second invitation will changed the invitation token
+which will prevent the first invite link to not work.
+TODO: Read this: https://gist.github.com/domenic/3889970
+TODO: Sanitize documents in database utility so that the documents match
+some sort of "schema".
+
+12/1
+// function upgradeFromTrial (organizationName, emailAddress) {
+//   organization.create(organizationName);
+//   organization.pay(organizationName);
+//   user.addToOrganization(emailAddress, organizationName, 'administrator');
+// }
+Login:
+  check password then authenticate session
+  create organization and user
+  update verification session
+Invite:
+  create password (change password)
+  verify user
+Verify:
+  verify user
+  update authentication
+  set selected organization
+Reset Password:
+  update reset session
+  change password
+Change password:
+  change password
+Account:
+  get users organization info
+Organization:
+  get organization management info
+User:
+  add to organization
+  remove from organization
+
+// IMPORTANT
+// All requests from client must be atomic, because we want to protect
+// against cases where a user closes their browser between requests.
+
+organization/add_user
+organization/remove_user
+organization/pay
+organization/create
+
+user/create
+user/verify
+user/invite
+user/change_role
+user/
+
+modify/create_user
+modify/verify_user
+modify/invite_user
+modify
+
+Sequences (make sure each http request is atomic and can be interrupted)
+  Index:
+    Assume: Nothing.
+    1.  GET   /
+    2.  POST  user/login
+              {
+                emailAddress: "",
+                password: ""
+              }
+  Invitation:
+    Assume: Nothing.
+    1.  GET   invite/?changePasswordToken="";?verificationToken=""
+    2.  POST  user/change_password
+              req: {
+                changePasswordToken: "",
+                newPassword: ""
+              }
+              res: {
+                emailAddress: ""
+              }
+    3.  POST  user/verify 
+              req: {
+                verificationToken: ""
+              }
+              res: {
+                emailAddress: ""
+              }
+    4.  POST  user/login
+              req: {
+                emailAddress: "",
+                password: ""
+              }
+              res: {
+
+              }
+  Verification:
+    Assume: Nothing.
+    1.  GET   verify/?verificationToken=""
+    2.  POST  user/verify
+              req: {
+                verificationToken: ""
+              }
+              res: {
+                emailAddress: ""
+              }
+    3.  POST  user/login
+              req: {
+                emailAddress: "",
+                password: ""
+              }
+              res: {
+
+              }
+  Reset Password:
+    Assume: Nothing.
+    1.  GET   reset_password/?changePasswordToken=""
+    2.  POST  user/change_password
+              req: {
+                changePasswordToken: "",
+                newPassword: ""
+              }
+              res: {
+                emailAddress: ""
+              }
+    3.  POST  user/login
+              req: {
+                emailAddress: "",
+                password: ""
+              }
+              res: {
+
+              }
+  User's Organization Information:
+    Assume: User is authenticated.
+    1.  POST  user/get_organization_information
+              req: {
+
+              }
+              res: {
+                organizationInformation: {}
+              }
+  Change Password:
+    Assume: User is authenticated.
+    1.  POST  user/change_password
+              req: {
+                currentPassword: "",
+                newPassword: ""
+              }
+              res: {
+                emailAddress: ""
+              }
+  Organization Management Information:
+    Assume: User is authenticated.
+    1.  POST  organization/get_management_information
+              req: {
+              }
+              res: {
+                managementInformation: {}
+              }
+  Add User To Organization: 
+    Assume: User is authenticated.
+    1.  POST  organization/add_user
+              req: {
+                newUserEmailAddress: ""
+              }
+              res: {
+              }
+  Remove User From Organization: 
+    Assume: User is authenticated.
+    1.  POST  organization/remove_user
+              req: {
+                removedUserEmailAddress: ""
+              }
+              res: {
+              }
+              
+  
+  
+
+
+
+updateVerificationSession(isTimeSensitive)
+verifyUser
+changeUsersPassword
+
+12/3
+https://stackoverflow.com/questions/45738489/how-to-deploy-a-vue-app-after-using-vue-cli-webpack
+
+user/login
+user/verify
+user/reset_password
+user/invite
+user/authenticated/change_password
+user/authenticated/get_organization_information
+user/authenticated/add_to_organization
+user/remove_from_organization
+
+./authenticate_user
+./verify_user
+./reset_users_password
+./invite_user
+./change_users_password
+./get_users_organization_information
+./add_user_to_organization
+./remove_user_from_organization
+
+/sign_up
+/verify_user
+/invite_user
+/reset_users_password
+/authenticate
+-------authentication enforcer
+-------organization name selection enforcer
+-------trial or payment enforcer
+/user/change_password
+/user/get_organization_information
+/organization/add_user
+/organization/remove_user
+
+12/4
+/sign_up +
+/verify_user + 
+/update_users_verification_session +
+/invite_user +
+/reset_users_password +
+/update_users_password_reset_session +
+/authenticate +
+-------authentication enforcer
+-------organization name selection enforcer
+-------trial or payment enforcer
+/user/change_password
+/user/get_specific_organization_information
+/organization/add_user
+/organization/remove_user
+/organization/get_user_management_information
+
+12/5
+Either organization or trial.
+
+12/7
+User
+  -> Profile "Which profile?"
+  -> Personal (trial or paid)
+  -> Organization (trial or paid)
+  -> 
+
+  [Personal (!) (Trial Expired)]
+  [fuelclub]
+  [dogsrkool]
+
+On first log in, it's really unlikely a user will have multiple profiles
+so here we will save their profile selection in local storage.
+
+If they do have multiple profiles, we'll just prompt. We should prompt
+for all account types even if unpaid for. If they only have one profile
+then auto select that profile.
+
+-> Enforce profile selection.
+-> Enforce payment.
+
+user = {
+  profiles: {
+
+  }
+}
+
+user = {
+  type: <["personal", "organization"]>
+}
+
+user = {
+  profiles: {
+    personal: {
+
+    }
+    organizations: {
+
+    }
+  }
+}
+
+user = {
+  organizations: {
+    _personal: {},
+    fuelclub: {},
+
+  }
+}
+
+user = {
+  profiles: {
+    _personal: {},
+
+  }
+}
+
+Assume all orgnaizations have a useful resource for all users in that
+organization. Thus, one user may be paid for multiple times, but with
+each payment, the user gets the resource provided by the organization.
+The same goes for their personal account.
+Really, the resource obtained from payment is the profile.
+
+12/9
+
+12/10
+userManager.personalProfile()
+userManager.organizationProfile(organizationName)
+userManager.doesPersonalProfileExist()
+
+clientTokenPayload = {
+  emailAddress: <string>,
+  organizationNames: <[]>,
+  doesPersonalProfileExist: <>
+}
+
+profile = {
+  type: 'personal', 'organization',
+}
+
+userInformation = {
+  profileDescriptors: [
+    {type: 'personal'},
+    {type: 'organization', organizationName: 'fuelclub'},
+    {type: 'organization', organizationName: 'dogsrkool'}
+  ]
+} 
+
+userInformation = 
+
+TODO Fix bug causing the verify user route to not auto log in.
+
+userInformation = {
+  emailAddress: <string>,
+
+}
+
+12/12
+profileDescriptor = {
+  type:,
+  organizationName
+}
+
+user/get_profile_descriptors

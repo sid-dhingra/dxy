@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- Material Icons -->
+  <link href='https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Material+Icons' rel="stylesheet">
+  <!-- Vuetify -->
+  <link rel="stylesheet" type="text/css" href="stylesheets/vuetify.min.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+
+  <!-- Stripe CSS -->
+  <link rel="stylesheet" type="text/css" href="stylesheets/stripe.css">
+</head>
+
+<body>
+    <div id="app">
+        <v-app id="inspire">
+            <main>
+                <v-toolbar 
+                    color="#062E60"
+                    fixed
+                    app
+                >
+                    <v-img src="images/dxy_full_white.png" height=40 contain position=left></v-img>
+                    <!-- <v-toolbar-title class="caption" style="color: #FAFAFA">{{title}}</v-toolbar-title> -->
+                    <v-spacer></v-spacer>
+                    <v-chip v-if="step_num <= 3" color="#A0E6FF">You are using a demo version of DemandXY</v-chip>
+                    <v-btn
+                    v-if="step_num != 4"
+                    round
+                    color="primary"
+                    dark
+                    v-on:click="redirect();"
+                  >
+                    Back Home
+                  </v-btn>
+                </v-toolbar>
+                <v-content>
+                <v-container>
+                        <v-stepper v-model="step_num">
+                            <v-stepper-header>
+                                <v-stepper-step :complete="step_num > 1" step="1">Enter Company Information</v-stepper-step>
+                                <v-divider></v-divider>
+                                <v-stepper-step :complete="step_num > 2" step="2">Choose a Plan</v-stepper-step>
+                                <v-divider></v-divider>
+                                <v-stepper-step :complete="step_num > 3" step="3">Review & Enter Billing</v-stepper-step>
+                                <v-divider></v-divider>
+                                <v-stepper-step :complete="step_num > 3" step="4">Payment Complete</v-stepper-step>
+                            </v-stepper-header>
+                            <v-stepper-items>
+                                <v-stepper-content step="1">
+                                    <v-card
+                                        class="mb-12"
+                                        height="400px"
+                                    >
+                                    <v-form
+                                        ref="org_form"
+                                        v-model="valid"
+                                    >
+
+                                        <v-text-field
+                                            v-model="full_name"
+                                            label="Full Name"
+                                            :rules="[v => !!v || 'Required']"
+                                            required
+                                        ></v-text-field>
+
+                                        <v-text-field
+                                            v-model="phone_number"
+                                            label="Phone Number"
+                                            :rules="[v => !!v || 'Required']"
+                                            required
+                                            mask="(###) ### - ####"
+                                        ></v-text-field>
+
+                                        <v-text-field
+                                            v-model="organization_name"
+                                            label="Company Name"
+                                            :rules="organizationRules"
+                                            required
+                                        ></v-text-field>
+
+                                        <v-select
+                                            v-model="organization_industry"
+                                            :items="industries"
+                                            :rules="[v => !!v || 'Required']"
+                                            label="Industry"
+                                            required
+                                        ></v-select>
+
+                                        <v-select
+                                            v-model="organization_size"
+                                            :items="sizes"
+                                            :rules="[v => !!v || 'Required']"
+                                            label="Number of Employees"
+                                            required
+                                        ></v-select>
+
+                                        <v-btn
+                                            @click="step_up()"
+                                            :class=" { 'blue darken-4 white--text' : valid, disabled: !valid }"
+                                        >
+                                        Next
+                                        </v-btn>
+
+                                    </v-form>
+                                    </v-card>
+                                </v-stepper-content>
+                                <v-stepper-content step="2">
+                                <v-container grid-list-md>
+                                <v-layout column wrap>
+                                    <v-flex xs6>
+                                    <v-card
+                                        dark
+                                        height="50px"
+                                        color="#042E60"
+                                    >
+                                        <v-card-title><span class="title font-weight-regular">Select a plan</span></v-card-title>
+                                    </v-card>
+                                    </v-flex>
+                                    <v-flex xs6>
+                                    <v-card hover light height="150px" color="#DEF6FF" @click="select_plan('Individual','$29/month')">
+                                        <v-card-title primary-title>
+                                            <div>
+                                                <div class="headline font-weight-bold">Single User</div>
+                                                <span>Simple transparent pricing for everyone.<span>
+                                            </div>
+                                        </v-card-title>
+                                        <v-card-text class="title font-weight-light">$29/month</v-card-text>
+                                    </v-card>
+                                    </v-flex>
+                                </v-layout>
+                                </v-container>
+                                </v-stepper-content>
+                                <v-stepper-content step="3">
+                                    <v-container grid-list-md>
+                                    <v-layout row wrap>
+                                        <v-flex xs6>
+                                            <v-card height="400px" light color="#FBFBFB">
+                                                <v-card-title><span class="title font-weight-regular">Review Details</span></v-card-title>
+                                                <v-divider></v-divider>
+                                                <v-card-text>
+                                                        <div class="subheading font-weight-regular">User Information</div>
+                                                        <div class="sbody font-weight-light">Email: {{user_info['emailAddress']}}</div>
+                                                </v-card-text>                                                       
+                                                <v-card-text>
+                                                    <div class="subheading font-weight-regular">Company Information</div>
+                                                    <div class="sbody font-weight-light">Name: {{full_name}}</div>
+                                                    <div class="sbody font-weight-light">Phone Number: {{phone_number}}</div>
+                                                    <div class="sbody font-weight-light">Organization Name: {{organization_name}}</div>
+                                                    <div class="sbody font-weight-light">Industry: {{organization_industry}}</div>
+                                                    <div class="sbody font-weight-light">Company Size: {{organization_size}}</div>
+                                                </v-card-text>
+                                                <v-card-text>
+                                                    <div class="subheading font-weight-regular">Plan</div>
+                                                    <div class="sbody font-weight-light">Name: {{plan}}</div>
+                                                    <div class="sbody font-weight-light">Pricing: {{pricing}}</div>
+                                                </v-card-text>
+                                            </v-card>
+                                        </v-flex>
+                                    <v-flex xs6>
+                                        <v-card height="400px" light>
+                                            <v-card-title><span class="title font-weight-regular">Billing Information</span></v-card-title>
+                                            <v-divider></v-divider>
+                                            <div class="px-4 py-2">
+                                            <v-form
+                                                ref="billing_form"
+                                                v-model="valid2"
+                                            >
+                                                <v-text-field
+                                                    v-model="address_line"
+                                                    label="Address"
+                                                    :rules="[v => !!v || 'Required']"
+                                                    required
+                                                ></v-text-field>
+
+                                                <v-text-field
+                                                    v-model="address_city"
+                                                    label="City"
+                                                    :rules="[v => !!v || 'Required']"
+                                                    required
+                                                ></v-text-field>
+
+                                                <v-select
+                                                    v-model="address_state"
+                                                    :items="states"
+                                                    :rules="[v => !!v || 'Required']"
+                                                    label="State"
+                                                    required
+                                                ></v-select>
+                                            </v-form>
+                                            </div>
+                                            <div class="px-4 py-2">
+                                            <v-form action="/charge" method="post" id="payment-form">
+                                                <div class="form-row">
+                                                    <div id="card"></div>
+                                                </div>
+                                                <div class="pa-1" color="#B90808" id="card-errors" role="alert"></div>
+                                            </v-form>
+                                            </div>
+                                        </v-card>
+                                    </v-flex>
+                                    </v-layout> 
+                                    </v-container>
+                                </v-stepper-content>
+                                <v-stepper-content step="4">
+                                        <v-container grid-list-md>
+                                                <v-layout column wrap>
+                                                    <v-flex xs6>
+                                                    <v-card
+                                                        dark
+                                                        height="50px"
+                                                        color="#042E60"
+                                                    >
+                                                        <v-card-title><span class="title font-weight-regular">Congratulations!</span></v-card-title>
+                                                    </v-card>
+                                                    </v-flex>
+                                                    <v-flex xs6>
+                                                    <v-card light height="300px" color="#DEF6FF">
+                                                        <v-card-title primary-title>
+                                                            <div>
+                                                                <div class="headline font-weight-bold">You've successfuly signed up for DemandXY</div>
+                                                            </div>
+                                                        </v-card-title>
+                                                        <br/>
+                                                        <br/>
+                                                        <div class="pa-3 pm-3">
+                                                        <v-btn
+                                                            class="elevation-10"
+                                                            block
+                                                            v-if="step_num == 4"
+                                                            color="primary"
+                                                            dark
+                                                            v-on:click="reset_to_login();"
+                                                        >
+                                                            Log back in to access your paid features!
+                                                        </v-btn>
+                                                        </div>
+                                                    </v-card>
+                                                    </v-flex>
+                                                </v-layout>
+                                                </v-container>
+                                    </v-stepper-content>
+                            </v-stepper-items>
+                    </v-stepper>
+                    <v-card>
+                        <v-spacer></v-spacer>
+                        <v-btn
+                            v-if="step_num == 3"
+                            @click="submit()"
+                            :class=" { 'blue darken-4 white--text' : valid2, disabled: !valid2 }"
+                        >
+                            Submit
+                        </v-btn>
+                        <v-spacer></v-spacer>
+                        <v-btn
+                            color="light gray"
+                            @click="step_down()"
+                            v-if="step_num > 1 & step_num != 4"
+                        >
+                            Back
+                        </v-btn>
+                    </v-card>
+                </v-container>
+                </v-content>
+            </main>
+        </v-app>
+    </div>
+
+<script src="https://unpkg.com/vue/dist/vue.js"></script>
+<script src="https://unpkg.com/vuetify@1.5.16/dist/vuetify.js"></script>
+<script src="https://js.stripe.com/v3/"></script>
+
+<script>
+    var app =  new Vue({
+        el: '#app',
+        data: function() {
+
+            // Get the user info.
+            var user_info = {};
+            var token_payload_cookie = this.get_cookie_by_name('tokenPayload');
+            if (token_payload_cookie !== undefined) {
+                var decoded_token_payload = this.decode_token_payload_cookie(token_payload_cookie);
+                user_info = decoded_token_payload['userInformation'];
+            }
+
+            // Set paidUntil for user_info
+            user_info['paidUntil'] = "";
+
+            return {
+                state: "blank",
+                user_info: user_info,
+                valid: false,
+                valid2: false,
+                step_num: 1,
+                full_name: '',
+                phone_number: '',
+                address_line: '',
+                address_city: '',
+                address_state: '',
+                organization_name: '',
+                organizationRules: [
+                    (v) => !!v || 'Required',
+                    (v) => /^\S{1}(?:.)*\S$/.test(v) || 'Organization Name must be longer than 1 character and not begin or end with a space'
+                ],
+                organization_industry: '',
+                organization_size: '',
+                industries: [
+                    'Marketing',
+                    'Computer Software',
+                    'Computer Hardware',
+                    'Healthcare & Wellness',
+                    'Law / Legal',
+                    'Real Estate',
+                    'Financial Services',
+                    'Professional Services',
+                    'Retail',
+                    'Education',
+                    'Social Media',
+                    'Non-profit',
+                    'Government',
+                    'N/A'
+                ],
+                states: [
+                    "AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DC",  
+                    "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA",  
+                    "MA", "MD", "ME", "MI", "MN", "MO", "MS", "MT", "NC", "ND", "NE",  
+                    "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "RI", "SC",  
+                    "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WI", "WV", "WY"
+                ],
+                sizes: [
+                    '0 - 5',
+                    '6 - 10',
+                    '11 - 20',
+                    '21 - 50',
+                    '51 - 100',
+                    '100+'
+                ],
+                // Plan & Pricing
+                plan: 'team',
+                pricing: 'none',
+                //card information
+                card: {
+                    cvc: '',
+                    number: '',
+                    expiry: ''
+                },          
+                //elements
+                cardNumber: '',
+                cardExpiry: '',
+                cardCvc: '',
+                stripe: null,
+                // errors
+                stripeError: '',
+                cardCvcError: '',
+                cardExpiryError: '',
+                cardNumberError: '',
+            }
+        },
+        mounted() {
+            this.setUpStripe();
+        },
+        methods: {
+            redirect: function() {
+                window.location.href = '/'
+            },
+            step_up: function() {
+                var vue = this;
+                if (this.$refs.org_form.validate()) {
+                    vue.step_num = vue.step_num + 1;
+                }
+            },
+            step_down: function() {
+                var vue = this;
+                if (vue.step_num <= 1) {
+                    this.redirect();
+                }
+                else {
+                    vue.step_num = vue.step_num - 1
+                }
+            },
+            select_plan(plan,pricing) {
+                this.plan = plan;
+                this.pricing = pricing;
+                this.step_up();
+            },
+            get_cookie_by_name: function (name) {
+                var value = "; " + document.cookie;
+                var parts = value.split("; " + name + "=");
+                if (parts.length == 2) return parts.pop().split(";").shift();
+            },
+            decode_token_payload_cookie: function (token_payload_cookie) {
+                var base64Url = token_payload_cookie;
+                var base64 = base64Url.replace('-', '+').replace('_', '/');
+                return JSON.parse(window.atob(base64));
+            },
+            setUpStripe: function() {
+                if (window.Stripe === undefined) {
+                    alert('Stripe V3 library not loaded!');
+                } 
+                else {
+                    const stripe = window.Stripe('pk_live_ehiYPBoJ3H1X2H54YfxodQcK00mwXYFOPR');
+                    this.stripe = stripe;
+
+                    const elements = stripe.elements();
+                    
+                    var style = {
+                        base: {
+                            color: '#32325d',
+                            fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+                            fontSmoothing: 'antialiased',
+                            fontSize: '16px',
+                            '::placeholder': {
+                                color: '#aab7c4'
+                            }
+                        },
+                        invalid: {
+                            color: '#fa755a',
+                            iconColor: '#fa755a'
+                        }
+                    };
+
+                    // Create an instance of the card Element.
+                    this.card = elements.create('card', {style: style});
+                    // this.card = elements.create('card');
+                    this.card.mount('#card');
+
+                    // Handle real-time validation errors from the card Element.
+                    this.card.addEventListener('change', function(event) {
+                        var displayError = document.getElementById('card-errors');
+                        if (event.error) {
+                            displayError.textContent = event.error.message;
+                        } 
+                        else {
+                            displayError.textContent = '';
+                        }
+                    });
+                }
+            },
+            registerOrganizationAndPayment: function (stripePaymentToken) {
+                var vue = this;
+                var org_json = JSON.stringify({
+                                emailAddress: vue.user_info['emailAddress'],
+                                organizationName: vue.organization_name,
+                                organizationIndustry: vue.organization_industry,
+                                stripePaymentToken: stripePaymentToken,
+                                companySize: vue.organization_size,
+                                addressLine: vue.address_line,
+                                addressCity: vue.address_city,
+                                addressState: vue.address_state,
+                                phoneNumber: vue.phone_number,
+                                adminName: vue.full_name,
+                                pricingPlan: vue.plan
+                            });
+                fetch("/organization/new_organization", {
+                    body: org_json,
+                    method: "POST",
+                    headers: new Headers({'Content-Type': 'application/json'})
+                }).then(function(response){
+                    response.text().then(function(text){
+                        var result = JSON.parse(text);
+                        if (result.error === undefined) {
+                            console.log(Date(result));
+                            var paid_until = new Date();
+                            paid_until = result.toLocaleString("en-US",{ weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                            console.log(paid_until.toString());
+                            vue.user_info['paidUntil'] = paid_until;
+                            vue.step_up();
+                        }
+                        else {
+                            console.log("error")
+                        }
+                    })
+                })
+            },
+            submit: function() {
+                var vue = this;
+                if (this.$refs.billing_form.validate()) {
+                    this.stripe.createToken(this.card).then(function(result) {
+                        if (result.error) {
+                            // Inform the user if there was an error.
+                            var errorElement = document.getElementById('card-errors');
+                            errorElement.textContent = result.error.message;
+                        } else {
+                            // Handle the token created
+                            vue.registerOrganizationAndPayment(result.token.id);
+                        }
+                    });
+                }
+            },
+            reset_to_login: function() {
+                var vue = this;
+                document.cookie = "tokenPayload=" + ";path=/"
+                document.cookie = "selectedProfile=" 
+                            + ";path=/"
+                            + ";expires=Thu, 01 Jan 1970 00:00:01 GMT"
+                vue.redirect()
+            }
+        }
+    });
+</script>
+
+</body>
+</html>

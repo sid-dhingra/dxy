@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- Material Icons -->
+  <link href='https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Material+Icons' rel="stylesheet">
+  <!-- Vuetify -->
+  <link href="https://unpkg.com/vuetify@1.5.16/dist/vuetify.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+</head>
+<body>
+  <div id="app"
+  >
+    
+    <v-app id="inspire">
+      
+      <!-- CONTENT -->
+      <v-content
+      >
+
+        <!--=============================================================-->
+        <!-- page (if not loaded)-->
+        <!--=============================================================-->
+        <v-layout
+          column 
+          wrap
+          style="background-color: #EEEEEE"
+          class="px-4 pt-4 pb-3"
+          justify-center
+          align-center
+          fill-height
+        >
+
+          <!-- Landing -->
+          <v-layout
+            column
+            align-center
+            v-if="state === 'landing'"
+          >
+            Create your password.
+            <div>
+              <v-text-field
+                v-model="password"
+                label="Password"
+              ></v-text-field>
+              <v-text-field
+                v-model="password_confirm"
+                label="Password (confirm)"
+              ></v-text-field>
+            </div>
+            <v-btn 
+              color="success"
+              v-on:click="try_set_password();"
+            >
+              Create and Log In
+            </v-btn>
+            <div
+              v-if="error !== undefined"
+            >
+              {{error}}
+            </div>
+          </v-layout>
+
+        </v-layout>
+
+      </v-content>
+
+    </v-app>
+  </div>
+
+  <script src="https://unpkg.com/vue/dist/vue.js"></script>
+ <script src="https://unpkg.com/vuetify@1.5.16/dist/vuetify.js"></script>
+
+  <script>
+
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    // Vue
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+
+    var app = new Vue({
+      el: '#app',
+      data: function () {
+        return {
+          password: '',
+          password_confirm: '',
+          error: undefined,
+          state: 'landing',
+        }
+      },
+      methods: {
+        try_sign_in: function (email_address, password) {
+          let vue = this
+          vue.error = undefined
+          fetch("/authenticate", {
+            body: JSON.stringify({
+              emailAddress: email_address,
+              password: password
+            }),
+            method: "POST",
+            headers: new Headers({'Content-Type': 'application/json'})
+          }).then(function(response){
+            response.text().then(function(text){
+              var token_payload_cookie = vue.get_cookie_by_name('tokenPayload')
+              var message = JSON.parse(text)
+              if (message.error === undefined
+                  && token_payload_cookie) {
+                var decoded_token_payload 
+                  = vue.decode_token_payload_cookie(token_payload_cookie)
+                var user_info = decoded_token_payload['userInformation']
+                var profile_descriptors = user_info['profileDescriptors'];
+                if (profile_descriptors.length === 0) {
+                  vue.error = "You do not have any valid profiles."
+                } else if (profile_descriptors.length === 1) {
+                  vue.set_selected_profile(profile_descriptors[0])
+                } else {
+                  vue.redirect()
+                }
+              } else {
+                vue.error = message.error
+              }
+            })
+          })
+        },
+        try_set_password: function () {
+          let vue = this
+          vue.error = undefined
+          var search_params = new URLSearchParams(window.location.search)
+          var invitation_token = search_params.get('invitationToken')
+          if (vue.password === vue.password_confirm) {
+            fetch("/invite_user", {
+              body: JSON.stringify({
+                invitationToken: invitation_token,
+                password: vue.password,
+              }),
+              method: "POST",
+              headers: new Headers({'Content-Type': 'application/json'})
+            }).then(function(response){
+              response.text().then(function(text){
+                var result = JSON.parse(text)
+                if (result.error) {
+                  vue.error = result.error
+                } else {
+                  vue.try_sign_in(result['emailAddress'], vue.password)
+                }
+              })
+            })
+          } else {
+            vue.error = 'Passwords do not match.'
+          }
+        },
+        get_cookie_by_name: function (name) {
+          var value = "; " + document.cookie;
+          var parts = value.split("; " + name + "=");
+          if (parts.length == 2) return parts.pop().split(";").shift();
+        },
+        decode_token_payload_cookie: function (token_payload_cookie) {
+          var base64Url = token_payload_cookie;
+          var base64 = base64Url.replace('-', '+').replace('_', '/');
+          return JSON.parse(window.atob(base64));
+        },
+        set_selected_profile: function (profile_descriptor) {
+          var vue = this
+          fetch("/user/set_selected_profile", {
+            body: JSON.stringify({
+              'profileDescriptor': profile_descriptor
+            }),
+            method: "POST",
+            headers: new Headers({'Content-Type': 'application/json'})
+          })
+          .then(function (response) {
+            return response.text();
+          })
+          .then(function (text) {
+            var result = JSON.parse(text);
+            if (result.error) {
+              vue.error = result.error;
+            } else {
+              vue.redirect();
+            }
+          })
+        },
+        redirect: function () {
+          var redirect = '/'
+          window.location.href = redirect
+        },
+      },
+      computed: {
+      },
+      mounted: function () {
+      }
+    })
+
+  </script>
+</body>
+</html>

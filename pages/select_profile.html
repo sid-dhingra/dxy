@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+ <link href='https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Material+Icons' rel="stylesheet">
+ <link rel="stylesheet" type="text/css" href="stylesheets/vuetify.min.css">
+</head>
+
+<body>
+  <div id="app">
+    <v-app>
+      <main>
+      <v-container fluid fill-height class="profileOverlay">
+        <v-layout flex align-center justify-center v-if="state === 'landing'">
+          <v-flex xs12 sm4 elevation-2>          
+            <v-toolbar class="pt-2">
+                Choose a Profile
+            </v-toolbar>
+            <v-card>
+              <v-card-text class="pt-2">
+              <v-list v-if="error === undefined">
+                <v-list-tile v-for="(profile_descriptor,index) in profile_descriptors" v-on:click="set_selected_profile(profile_descriptor)">
+                  <v-list-tile-title>{{profile_descriptor.title}}</v-list-tile-title>
+                  <v-divider :key="index" :inset="profile_descriptor.inset"></v-divider>
+                </v-list-tile>
+              </v-list>
+              <div v-if="error !== undefined">
+                {{error}}
+              </div>
+              </v-card-text>
+            </v-card>
+          </v-flex>
+        </v-layout>
+      </v-container>
+    </main>
+    </v-app>
+  </div>
+ 
+  <script src="https://unpkg.com/vue/dist/vue.js"></script>
+ <script src="https://unpkg.com/vuetify@1.5.16/dist/vuetify.js"></script>
+
+  <script>
+
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    // Vue
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+
+    var app = new Vue({
+      el: '#app',
+      data: function () {
+        const vue = this
+        var error = undefined
+        var profile_descriptors = undefined
+        var token_payload_cookie = vue.get_cookie_by_name('tokenPayload')
+        if (token_payload_cookie !== undefined)
+        {
+          var decoded_token_payload 
+            = vue.decode_token_payload_cookie(token_payload_cookie)
+          var user_info = decoded_token_payload['userInformation']
+          profile_descriptors = user_info['profileDescriptors']
+        }
+        else
+        {
+          error = "User info not found."
+        }
+        return {
+          profile_descriptors: profile_descriptors,
+          error: error,
+          state: 'landing',
+        }
+      },
+      methods: {
+        get_cookie_by_name: function (name) {
+          var value = "; " + document.cookie;
+          var parts = value.split("; " + name + "=");
+          if (parts.length == 2) return parts.pop().split(";").shift();
+        },
+        decode_token_payload_cookie: function (token_payload_cookie) {
+          var base64Url = token_payload_cookie;
+          var base64 = base64Url.replace('-', '+').replace('_', '/');
+          return JSON.parse(window.atob(base64));
+        },
+        set_selected_profile: function (profile_descriptor) {
+          var vue = this
+          fetch("/user/set_selected_profile", {
+            body: JSON.stringify({
+              'profileDescriptor': profile_descriptor
+            }),
+            method: "POST",
+            headers: new Headers({'Content-Type': 'application/json'})
+          })
+          .then(function (response) {
+            return response.text();
+          })
+          .then(function (text) {
+            var result = JSON.parse(text);
+            if (result.error) {
+              vue.error = result.error;
+            } else {
+              vue.redirect();
+            }
+          })
+        },
+        redirect: function () {
+          var redirect = '/'
+          window.location.href = redirect
+        }
+      },
+      computed: {
+      },
+      mounted: function () {
+      }
+    })
+
+  </script>
+</body>
+</html>

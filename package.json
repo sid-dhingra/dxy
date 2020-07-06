@@ -1,0 +1,37 @@
+{
+  "name": "demandxy",
+  "version": "0.0.0",
+  "engines": {
+    "node": "8.11.1"
+  },
+  "private": true,
+  "scripts": {
+    "start": "node ./bin/www",
+    "devstart": "nodemon ./bin/www"
+  },
+  "dependencies": {
+    "atob": "^2.1.2",
+    "bcrypt": "^3.0.4",
+    "child_process": "^1.0.2",
+    "cookie-parser": "~1.4.3",
+    "debug": "~2.6.9",
+    "email-validator": "^2.0.4",
+    "express": "~4.16.0",
+    "express-rate-limit": "^3.3.2",
+    "helmet": "^3.14.0",
+    "http-errors": "~1.6.2",
+    "jade": "~1.11.0",
+    "jsonwebtoken": "^8.3.0",
+    "mongodb": "^3.1.9",
+    "mongoose": "^5.4.11",
+    "morgan": "^1.9.1",
+    "ms": "^2.1.1",
+    "nodemailer": "^4.6.8",
+    "randomstring": "^1.1.5",
+    "validator": "^10.9.0",
+    "stripe": "^7.10.0"
+  },
+  "devDependencies": {
+    "nodemon": "^1.17.3"
+  }
+}

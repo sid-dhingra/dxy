@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html>
+<head>
+ <link href='https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Material+Icons' rel="stylesheet">
+ <link rel="stylesheet" type="text/css" href="stylesheets/vuetify.min.css">
+</head>
+
+<body>
+ <div id="app">
+   <v-app>
+       <v-container fluid fill-height class="loginOverlay">
+
+         <!-- Login Page Layout -->
+          <v-layout align-center justify-center v-if="state === 'login'">
+            <v-flex xs12 sm8 md4 elevation-2>
+              <v-toolbar class="pt-2">
+                <v-img src="images/dxy_full.png" height=50 contain></v-img>
+              </v-toolbar>
+              <v-card>
+                <v-card-text class="pt-2">
+                  <div>
+                      <v-form v-model="valid" ref="form">
+                        <v-text-field
+                          prepend-icon="person"
+                          label="Enter your e-mail address"
+                          v-model="email"
+                          :rules="emailRules"
+                          required
+                        ></v-text-field>
+                        <v-text-field
+                          prepend-icon="lock"
+                          label="Enter your password"
+                          v-model="password"
+                          min="8"
+                          :append-icon="e1 ? 'visibility' : 'visibility_off'"
+                          :append-icon-cb="() => (e1 = !e1)"
+                          :type="e1 ? 'password' : 'text'"
+                          :rules="passwordRules"
+                          v-on:keyup.enter="submit"
+                          required
+                        ></v-text-field>
+                        <v-layout>
+                            <v-btn @click="submit" :class=" { 'blue darken-4 white--text' : valid, disabled: !valid }">Login</v-btn>
+                            <v-btn v-on:click="alert = false; state = 'check_org'" :class=" { 'blue darken-4 white--text' : valid, disabled: !valid }">Sign Up</v-btn>
+                        </v-layout>
+                        <v-layout>
+                            <v-spacer></v-spacer>
+                        <v-btn
+                                flat small
+                                v-on:click="alert = false; state = 'forgot_password';"
+                        >
+                        Forgot Password?
+                        </v-btn>
+                        </v-layout>
+                      </v-form>
+                  </div>
+                  <div v-if="error !== undefined">
+                      <v-alert
+                      :value="alert"
+                      color="error"
+                      icon="priority_high"
+                      outline
+                    >
+                    {{error}}
+                    </v-alert>
+                  </div>
+                </v-card-text>
+              </v-card>
+            </v-flex>
+          </v-layout>
+
+         <!-- Check Organization Page Layout --> 
+          <v-layout flex align-center justify-center v-if="state === 'check_org'">
+              <v-flex xs12 sm4 elevation-2>
+                <v-toolbar class="pt-2">
+                    <v-img src="images/dxy_full.png" height=50 contain></v-img>
+                  </v-toolbar-items>
+                </v-toolbar>
+                <v-card>
+                  <v-card-text class="pt-2">
+                    <div>
+                        <v-form v-model="valid" ref="form">
+                          <div>
+                            Are you part of an organization already using DemandXY?
+                          </div>
+                          <v-layout>
+                              <v-btn v-on:click="alert = false; state = 'existing_organization'" :class=" { 'blue darken-4 white--text' : valid, disabled: !valid }">Yes</v-btn>
+                              <v-btn v-on:click="alert = false; state = 'new_user_and_org'" :class=" { 'blue darken-4 white--text' : valid, disabled: !valid }">No</v-btn>
+                          </v-layout>
+                        </v-form>
+                    </div>
+                    <div v-if="error !== undefined">
+                        <v-alert
+                        :value="alert"
+                        color="error"
+                        icon="priority_high"
+                        outline
+                      >
+                        {{error}}
+                      </v-alert>
+                    </div>
+                  </v-card-text>
+                </v-card>
+              </v-flex>
+            </v-layout>
+
+         <!-- Existing Organization Page Layout --> 
+         <v-layout flex align-center justify-center v-if="state === 'existing_organization'">
+            <v-flex xs12 sm4 elevation-2>
+              <v-toolbar class="pt-2">
+                  <v-img src="images/dxy_full.png" height=50 contain></v-img>
+                </v-toolbar-items>
+              </v-toolbar>
+              <v-card>
+                <v-card-text class="pt-2">
+                  <div>
+                      <v-form v-model="valid" ref="form">
+                        <div>
+                            Please contact your organization's administrator to
+                            add an account under this organization.
+                            Please contact us for futher assistance.
+                        </div>
+                        <v-layout>
+                            <v-btn v-on:click="alert = false; state = 'login'" :class=" { 'blue darken-4 white--text' : valid, disabled: !valid }">Back to Login</v-btn>
+                        </v-layout>
+                      </v-form>
+                  </div>
+                  <div v-if="error !== undefined">
+                      <v-alert
+                      :value="alert"
+                      color="error"
+                      icon="priority_high"
+                      outline
+                    >
+                      {{error}}
+                    </v-alert>
+                  </div>
+                </v-card-text>
+              </v-card>
+            </v-flex>
+          </v-layout>
+
+         <!-- New User and Organization Page Layout -->
+         <v-layout flex align-center justify-center v-if="state === 'new_user_and_org'">
+            <v-flex xs12 sm4 elevation-2>
+              <v-toolbar class="pt-2">
+                  <v-img src="images/dxy_full.png" height=50 contain></v-img>
+                </v-toolbar-items>
+              </v-toolbar>
+              <v-card>
+                <v-card-text class="pt-2">
+                  <div>
+                      <v-form v-model="valid" ref="form">
+                        <v-text-field
+                          prepend-icon="person"
+                          label="Enter your e-mail address"
+                          v-model="email"
+                          :rules="emailRules"
+                          required
+                        ></v-text-field>
+                        <v-text-field
+                          prepend-icon="lock"
+                          label="Enter your password"
+                          v-model="password"
+                          min="8"
+                          :append-icon="e1 ? 'visibility' : 'visibility_off'"
+                          :append-icon-cb="() => (e1 = !e1)"
+                          :type="e1 ? 'password' : 'text'"
+                          :rules="passwordRules"
+                          required
+                        ></v-text-field>
+                        <v-text-field
+                          prepend-icon="person"
+                          label="Enter your organization name"
+                          v-model="organization_name"
+                          :rules="organizationRules"
+                          required
+                        ></v-text-field>
+                        <v-checkbox
+                          v-model="checkbox"
+                          :rules="[v => !!v || 'You must agree to continue!']"
+                          required
+                        >
+                            <template slot="label">
+                              <label>I accept the&nbsp; <a @click.stop href="https://www.demandxy.com/terms-of-use" target="_blank">Terms of Use</a>,&nbsp; <a @click.stop href="https://www.demandxy.com/privacy-policy" target="_blank">Privacy Policy</a>, and&nbsp; <a @click.stop href="https://www.demandxy.com/cookie-policy" target="_blank">Cookie Policy</a></label>
+                            </template>                            
+                        </v-checkbox>
+                        <v-layout>
+                            <v-btn @click="try_create_user" :class=" { 'blue darken-4 white--text' : valid, disabled: !valid }" :disabled="!valid">Sign Up</v-btn>
+                            <v-spacer></v-spacer>
+                            <v-btn v-on:click="alert = false; state = 'login'">Back to Login</v-btn>
+                        </v-layout>
+                      </v-form>
+                  </div>
+                  <div v-if="error !== undefined">
+                      <v-alert
+                      :value="alert"
+                      color="error"
+                      icon="priority_high"
+                      outline
+                    >
+                      {{error}}
+                    </v-alert>
+                  </div>
+                </v-card-text>
+              </v-card>
+            </v-flex>
+          </v-layout>
+
+         <!-- Forgot Password -->
+         <v-layout flex align-center justify-center v-if="state === 'forgot_password'">
+            <v-flex xs12 sm4 elevation-2>
+              <v-toolbar class="pt-2">
+                  <v-img src="images/dxy_full.png" height=50 contain></v-img>
+                </v-toolbar-items>
+              </v-toolbar>
+              <v-card>
+                <v-card-text class="pt-2">
+                  <div>
+                        <v-text-field
+                          prepend-icon="person"
+                          label="Enter your e-mail address"
+                          v-model="email"
+                          :rules="emailRules"
+                          v-on:keyup.enter="alert = false; update_password_reset_session(); state = 'prompt_reset_password_link';"
+                          required
+                        ></v-text-field>
+                        <v-layout>
+                            <v-btn 
+                              v-on:click="alert = false; update_password_reset_session();
+                                            state = 'prompt_reset_password_link';" 
+                            :class=" { 'blue darken-4 white--text' : valid, disabled: !valid }">Reset Password</v-btn>
+                        </v-layout>
+                  </div>
+                  <div v-if="error !== undefined">
+                      <v-alert
+                      :value="alert"
+                      color="error"
+                      icon="priority_high"
+                      outline
+                    >
+                      {{error}}
+                    </v-alert>
+                  </div>
+                </v-card-text>
+              </v-card>
+            </v-flex>
+          </v-layout>
+
+         <!-- Reset Link Sent -->
+         <v-layout flex align-center justify-center v-if="state === 'prompt_reset_password_link'">
+            <v-flex xs12 sm4 elevation-2>
+              <v-toolbar class="pt-2">
+                  <v-img src="images/dxy_full.png" height=50 contain></v-img>
+                </v-toolbar-items>
+              </v-toolbar>
+              <v-card>
+                <v-card-text class="pt-2">
+                  <div>
+                      <v-form v-model="valid" ref="form">
+                          Please click on the link sent to your email address to reset
+                          your password.
+                        <v-layout>
+                            <v-btn v-on:click="alert = false; state = 'login'" :class=" { 'blue darken-4 white--text' : valid, disabled: !valid }">Back to Login</v-btn>
+                        </v-layout>
+                      </v-form>
+                  </div>
+                  <div v-if="error !== undefined">
+                      <v-alert
+                      :value="alert"
+                      color="error"
+                      icon="priority_high"
+                      outline
+                    >
+                      {{error}}
+                    </v-alert>
+                  </div>
+                </v-card-text>
+              </v-card>
+            </v-flex>
+          </v-layout>
+          
+         <!-- Password Verification -->
+         <v-layout flex align-center justify-center v-if="state === 'prompt_verification'">
+            <v-flex xs12 sm4 elevation-2>
+              <v-toolbar class="pt-2">
+                  <v-img src="images/dxy_full.png" height=50 contain></v-img>
+                </v-toolbar-items>
+              </v-toolbar>
+              <v-card>
+                <v-card-text class="pt-2">
+                  <div>
+                      <v-form v-model="valid" ref="form">
+                          Please click on the account verificaiton link to your email address to login.
+                        <v-layout>
+                            <v-btn v-on:click="alert = false; state = 'login'" :class=" { 'blue darken-4 white--text' : valid, disabled: !valid }">Back to Login</v-btn>
+                        </v-layout>
+                      </v-form>
+                  </div>
+                  <div v-if="error !== undefined">
+                      <v-alert
+                      :value="alert"
+                      color="error"
+                      icon="priority_high"
+                      outline
+                    >
+                      {{error}}
+                    </v-alert>
+                  </div>
+                </v-card-text>
+              </v-card>
+            </v-flex>
+          </v-layout>     
+
+          
+       </v-container>
+   </v-app>
+ </div>
+
+ <script src="https://unpkg.com/vue/dist/vue.js"></script>
+ <script src="https://unpkg.com/vuetify@1.5.16/dist/vuetify.js"></script>
+ <script>
+  var app =  new Vue({
+        el: '#app',
+        data () {
+          return {
+            valid: false,
+            e1: true,
+            password: '',
+            passwordRules: [
+              (v) => !!v || 'Password is required',
+              (v) => /^\S{1}(?:.){4,}\S$/.test(v) || 'Password must be at least 6 charactes long and cannot begin or end with a space.',
+            ],
+            email: '',
+            emailRules: [
+              (v) => !!v || 'E-mail is required',
+              (v) => /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(v) || 'E-mail must be valid'
+            ],
+            organization_name: '',
+            organizationRules: [
+              (v) => !!v || 'Organization Name is required',
+              (v) => /^\S{1}(?:.)*\S$/.test(v) || 'Organization Name must be longer than 1 character and not begin or end with a space'
+            ],
+            organization_names: [],
+            error: undefined,
+            alert: false,
+            state: "login"
+          }
+        },
+        methods: {
+          submit () {
+            console.log("submit method called")
+            if (this.$refs.form.validate()) {
+              this.sign_in()
+            }
+          },
+          clear () {
+            this.$refs.form.reset()
+          },
+          sign_in: function () {
+          var vue = this
+          vue.error = undefined
+          fetch("/authenticate", {
+            body: JSON.stringify({
+              emailAddress: vue.email.toLowerCase(),
+              password: vue.password
+            }),
+            method: "POST",
+            headers: new Headers({'Content-Type': 'application/json'})
+          }).then(function(response){
+            response.text().then(function(text){
+              var token_payload_cookie = vue.get_cookie_by_name('tokenPayload')
+              var message = JSON.parse(text)
+              if (message.error === undefined
+                  && token_payload_cookie) {
+                var decoded_token_payload 
+                  = vue.decode_token_payload_cookie(token_payload_cookie)
+                var user_info = decoded_token_payload['userInformation']
+                var profile_descriptors = user_info['profileDescriptors'];
+                if (profile_descriptors.length === 0) {
+                  vue.error = "You do not have any valid profiles."
+                  vue.alert = true;
+                } else if (profile_descriptors.length === 1) {
+                  vue.set_selected_profile(profile_descriptors[0])
+                } else {
+                  vue.redirect()
+                }
+              } else {
+                vue.error = message.error
+                vue.alert = true;
+              }
+            })
+          })
+        },
+        get_cookie_by_name: function (name) {
+          var value = "; " + document.cookie;
+          var parts = value.split("; " + name + "=");
+          if (parts.length == 2) return parts.pop().split(";").shift();
+        },
+        decode_token_payload_cookie: function (token_payload_cookie) {
+          var base64Url = token_payload_cookie;
+          var base64 = base64Url.replace('-', '+').replace('_', '/');
+          return JSON.parse(window.atob(base64));
+        },
+        set_selected_profile: function (profile_descriptor) {
+          var vue = this
+          fetch("/user/set_selected_profile", {
+            body: JSON.stringify({
+              'profileDescriptor': profile_descriptor
+            }),
+            method: "POST",
+            headers: new Headers({'Content-Type': 'application/json'})
+          })
+          .then(function (response) {
+            return response.text();
+          })
+          .then(function (text) {
+            var result = JSON.parse(text);
+            console.log(result)
+            if (result.error) {
+              vue.error = result.error;
+              vue.alert = true;
+            } else {
+              vue.redirect();
+            }
+          })
+        },
+        redirect: function () {
+          var redirect = '/'
+          window.location.href = redirect
+        },
+        try_create_user: function () {
+          var vue = this
+          vue.error = undefined
+          fetch("/sign_up", {
+            body: JSON.stringify({
+              emailAddress: vue.email,
+              password: vue.password,
+              organization: vue.organization_name,
+              state: 'trial'
+            }),
+            method: "POST",
+            headers: new Headers({'Content-Type': 'application/json'})
+          }).then(function(response){
+            response.text().then(function(text){
+              var result = JSON.parse(text)
+              if (result.error === undefined) {
+                // vue.state = 'prompt_verification'
+                vue.sign_in();
+              } else {
+                vue.error = result.error
+                vue.alert = true;
+              }
+            })
+          })
+        },
+        update_verification_session: function () {
+          var vue = this
+          vue.error = undefined
+          fetch("/update_users_verification_session", {
+            body: JSON.stringify({
+              emailAddress: vue.email,
+              password: vue.password
+            }),
+            method: "POST",
+            headers: new Headers({'Content-Type': 'application/json'})
+          }).then(function(response){
+            response.text().then(function(text){
+              var result = JSON.parse(text)
+              if (result.error === undefined) {
+                vue.error = undefined
+              }
+            })
+          })
+        },
+        update_password_reset_session: function () {
+          var vue = this
+          vue.error = undefined
+          fetch("/update_users_password_reset_session", {
+            body: JSON.stringify({
+              emailAddress: vue.email,
+            }),
+            method: "POST",
+            headers: new Headers({'Content-Type': 'application/json'})
+          }).then(function(response){
+            response.text().then(function(text){
+              var result = JSON.parse(text)
+            })
+          })
+        }
+      },
+      mounted: function () {
+      }
+    })
+ </script>
+
+
+</body>
+</html>

@@ -1,0 +1,2764 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- Material Icons -->
+  <link href='https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Material+Icons' rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+  <!-- Vuetify -->
+  <link href="https://unpkg.com/vuetify@1.5.16/dist/vuetify.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+</head>
+<body>
+  <div id="app"
+    v-on:click="handle_click($event)"
+  >
+    
+    <v-app id="inspire">
+
+      <!-- TOOLBAR -->
+      <v-toolbar 
+        color="#062E60"
+        fixed
+        app
+        v-if="is_ready"
+      >
+          <v-img src="images/dxy_full_white.png" height=40 contain position=left></v-img>
+          <!-- <v-toolbar-title class="caption" style="color: #FAFAFA">{{title}}</v-toolbar-title> -->
+        <v-spacer></v-spacer>
+        <v-chip v-if="selected_profile['type'] == 'demo'" color="#A0E6FF">You are using a demo version of DemandXY</v-chip>
+        <v-chip v-if="selected_profile['type'] == 'trial'" color="#D8B2B6">Your trial expires in {{selected_profile['trialDaysRemaining']}} day(s).</v-chip>
+        <v-btn
+          v-if="selected_profile['type'] == 'demo' || selected_profile['type'] == 'trial'"
+          round
+          color="primary"
+          dark
+          v-on:click="upgrade_setup();"
+        >
+          Upgrade
+        </v-btn>
+        <v-btn
+          v-if="current_app_state == 'normal_user_settings'"
+          round
+          color="primary"
+          dark
+          v-on:click="current_app_state = 'main'"
+        >
+          Back Home
+        </v-btn>
+        <v-toolbar-items>
+          <v-menu offset-y>
+            <v-btn
+              flat
+              dark
+              slot="activator"
+            >
+            {{user_info['emailAddress']}}
+              <v-icon right>expand_more</v-icon>
+            </v-btn>
+            <v-card>
+              <v-list>
+                <v-list-tile avatar>
+                  <!-- <v-list-tile-avatar>
+                    <img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="John">
+                  </v-list-tile-avatar> -->
+      
+                  <v-list-tile-content>
+                    <v-list-tile-title class="title">{{user_info['emailAddress']}}</v-list-tile-title>
+                    <v-list-tile-sub-title>{{selected_profile['organizationName']}}</v-list-tile-sub-title>
+                  </v-list-tile-content>
+                </v-list-tile>
+              </v-list>
+      
+              <v-divider></v-divider>
+
+              <v-list
+                v-if="user_info['profileDescriptors'].length > 1"
+                class="pa-0"
+              >
+                <v-list-tile
+                  v-for="(item, index) in user_info['profileDescriptors']"
+                  :key="index"
+                  @click="switch_selected_profile(item)"
+                  v-if="item['title'] !== selected_profile['title']"
+                >
+                  <v-list-tile-title>Switch to {{item['title']}}</v-list-tile-title>
+                </v-list-tile>
+              </v-list>
+
+              <v-divider
+                v-if="user_info['profileDescriptors'].length > 1"
+              >
+              </v-divider>
+
+              <v-card-actions>                
+                <v-btn
+                  flat
+                  @click="current_app_state = 'normal_user_settings'"
+                >
+                <v-icon left>settings</v-icon>
+                Account Settings
+                </v-btn>
+              </v-card-actions>
+      
+              <v-card-actions>
+                <v-btn 
+                  flat 
+                  @click="log_out()"
+                >
+                <v-icon left>logout</v-icon>
+                  Log Out</v-btn>
+              </v-card-actions>
+            </v-card>
+
+          </v-menu>
+        </v-toolbar-items>
+      </v-toolbar>
+      
+      <!-- CONTENT -->
+      <v-content
+      >
+
+        <!--=============================================================-->
+        <!-- page (if not loaded)-->
+        <!--=============================================================-->
+        <v-layout
+          v-if="is_ready === false"
+          column 
+          wrap
+          style="background-color: #EEEEEE"
+          class="px-4 pt-4 pb-3"
+          justify-center
+          align-center
+          fill-height
+        >
+          <v-progress-circular
+            :size="70"
+            :width="7"
+            indeterminate color="#062E60"
+            class="ma-4"
+          >
+          </v-progress-circular>
+        </v-layout>
+
+        <!--=============================================================-->
+        <!-- page (if fully loaded)-->
+        <!--=============================================================-->
+        <v-layout
+          v-else-if="current_app_state === 'main'"
+          row 
+          wrap
+          style="background-color: #EEEEEE"
+          class="px-4 pt-4 pb-3"
+          justify-start
+        >
+  
+            <!--=============================================================-->
+            <!--=============================================================-->
+            <!--=============================================================-->
+            <!-- add-filters -->
+            <!--=============================================================-->
+            <!--=============================================================-->
+            <!--=============================================================-->
+            <v-flex
+              d-flex
+              sm5
+              style="!background-color: grey"
+              class="pa-4"
+              column
+            >
+              <v-card
+                raised
+                style="background-color: #FAFAFA; 
+                       height: 80vh;
+                       overflow-y: scroll;
+                       !border-radius: 10px"
+              >
+                <v-layout
+                  row
+                  wrap
+                >
+
+                  <!--=======================================================-->
+                  <!-- add-filters-toolbar -->
+                  <!--=======================================================-->
+                  <v-flex
+                    id="add-filters-toolbar"
+                    sm12
+                    style="position: sticky;
+                           top: 0;
+                           z-index: 1"
+                  >
+                    <v-card
+                      raised
+                      class="pa-2 body-2"
+                      style="height: 55px;
+                             background-color: #062E60;
+                             border-radius: 1px 1px 0px 0px;
+                             color: #FAFAFA"
+                    >
+                      <v-layout
+                        align-center
+                        justify-center
+                        fill-height
+                      >
+                        <v-icon
+                          style="left: 0; 
+                                 position: absolute" 
+                          class="ml-2"
+                          color="grey lighten-4"
+                        >
+                          add_box
+                        </v-icon>
+                        <div>ADD FILTERS</div>
+                      </v-layout>
+                    </v-card>
+                  </v-flex>
+
+                  <!--=======================================================-->
+                  <!-- add-filters-content -->
+                  <!--=======================================================-->
+                  <v-flex
+                    id="add-filters-content"
+                    sm12
+                    class="pa-3"
+                  >
+
+                    <!--=====================================================-->
+                    <!-- search-menu -->
+                    <!--=====================================================-->
+                    <div
+                      id="search-bar"
+                    >
+                      <!--
+                        This is the text field.
+
+                        The inspiration for this is taken from the
+                        following link:
+                        https://codepen.io/AndrewThian/pen/QdeOVa.
+                      -->
+                      <v-text-field
+                        class="mb-2"
+                        name="input-1"
+                        label="Search Filters"
+                        v-model="search_query"
+                        id="testing"
+                        v-on:click="is_showing_suggestions = true"
+                        v-on:input="is_showing_suggestions = true;
+                                    update_searched_filters();"
+                        v-on:keyup.enter="is_showing_suggestions = false;
+                                          update_searched_filters()"
+                        v-bind:hide-details="(is_showing_suggestions === true
+                                              && search_suggestions.length !== 0)
+                                            || (is_showing_suggestions === false
+                                                && searched_filters.length !== 0)"
+                        v-bind:error-messages="(is_showing_suggestions === true
+                                                && search_suggestions.length !== 0)
+                                              || (is_showing_suggestions === false
+                                                  && searched_filters.length !== 0)
+                                              ? [] : [`No filters found.`]"
+                        v-bind:append-icon="search_query === ``
+                                            || is_showing_suggestions
+                                            ? `search` : `close`"
+                        v-bind:append-icon-cb="function () {
+                          if (is_showing_suggestions) {
+                            if (search_query !== ``) {
+
+                            } else {
+                              search_query = ``;
+                            }
+                          } else {
+                            search_query = ``;
+                          }
+                          is_showing_suggestions = false;
+                          update_searched_filters();
+                        }"
+                      ></v-text-field>
+                      <!--
+                        This is the search suggestion list.
+
+                        For the search suggestions list, we need to make sure
+                        we check for two conditions because the inital state of 
+                        the site should not show the suggestions.
+                      -->
+                      <v-list
+                        v-if="search_suggestions.length !== 0 
+                              && is_showing_suggestions"
+                      >
+                        <v-list-tile
+                          v-for="suggestion in search_suggestions"
+                          v-bind:key="suggestion"
+                          v-on:click="search_query = suggestion;
+                                      is_showing_suggestions = false;
+                                      update_searched_filters();"
+                        >
+                          <v-list-tile-content>
+                            <v-list-tile-title>{{suggestion}}</v-list-tile-title>
+                          </v-list-tile-content>
+                        </v-list-tile>
+                      </v-list>
+                    </div>
+
+                    <!--=========================================================-->
+                    <!-- addable-filter -->
+                    <!--=========================================================-->
+
+                    <v-list
+                      v-if="!is_showing_suggestions"
+                      style="background-color: transparent"
+                      one-line
+                    >
+                      <dxy-filter
+                        v-for="filter in searched_filters"
+                        v-bind:key="filter.title"
+                        v-bind:filter="filter"
+                        v-bind:depth=0
+                        v-bind:ref="filter.title"
+                        v-bind:filter-forms="filter_forms"
+                        v-on:filter-form-input="update_filter_forms"
+                      >
+                      </dxy-filter>
+                    </v-list>
+
+                  </v-flex>
+
+                </v-layout>
+
+              </v-card>
+            </v-flex>
+
+            <!--=============================================================-->
+            <!--=============================================================-->
+            <!--=============================================================-->
+            <!-- selected-filters -->
+            <!--=============================================================-->
+            <!--=============================================================-->
+            <!--=============================================================-->
+            <v-flex
+              d-flex
+              sm7
+              style="!background-color: purple"
+              class="pa-4"
+            >
+              <v-card
+                raised
+                style="background-color: #FAFAFA; 
+                      height: 80vh;
+                      overflow-y: scroll;
+                      !border-radius: 10px"
+              >
+                <v-layout
+                  row
+                  wrap
+                  fill-height
+                  style="!background-color: green"
+                  align-content-start
+                >
+
+                  <!--=======================================================-->
+                  <!-- selected-filters-toolbar -->
+                  <!--=======================================================-->
+                  <v-flex
+                    id="selected-filters-toolbar"
+                    sm12
+                    style="position: sticky;
+                          top: 0;
+                          z-index: 1"
+                  >
+                    <v-card
+                      raised
+                      class="pa-2 body-2"
+                      style="height: 55px;
+                            background-color: #062E60;
+                            border-radius: 1px 1px 0px 0px;
+                            color: #FAFAFA"
+                    >
+                      <v-layout
+                        align-center
+                        justify-center
+                        fill-height
+                      >
+                        <v-icon
+                          style="left: 0; 
+                                position: absolute" 
+                          class="ml-3"
+                          color="grey lighten-4"
+                        >
+                          create
+                        </v-icon>
+                        <div>YOUR FILTERS</div>
+                        <!-- <v-tooltip
+                          left
+                          style="right: 0; 
+                                 position: absolute" 
+                        >
+                          <v-btn icon slot="activator">
+                              <v-icon color="white">{{get_active_filter_forms_count_icon()}}</v-icon>
+                            </v-btn>
+                          <span class="ma-4">{{"You have " + get_active_filter_forms_count() + " filters applied."}}</span>
+                        </v-tooltip> -->
+                      </v-layout>
+                    </v-card>
+
+                    <v-tooltip
+                      left
+                      style="right: 0; 
+                              position: absolute" 
+                    >
+                      <v-btn
+                        absolute
+                        dark
+                        fab
+                        bottom
+                        right
+                        medium
+                        color="grey lighten-4" slot="activator"
+                      >
+                        <v-icon 
+                          color="blue darken-1"
+                        >
+                          {{get_active_filter_forms_count_icon()}}
+                        </v-icon>
+                      </v-btn>
+                      <span class="ma-4">{{"You have " + get_active_filter_forms_count() + " filters applied."}}</span>
+                    </v-tooltip>
+                  </v-flex>
+                  <!--=======================================================-->
+                  <!-- selected-filters-content -->
+                  <!--=======================================================-->
+                  <v-flex
+                    id="selected-filters-content"
+                    sm12
+                    class="px-3"
+                  >
+                    <!--=========================================================-->
+                    <!-- filter-form(s) -->
+                    <!--=========================================================-->
+                    <div
+                      class="px-4 py-3"
+                    >
+                      <template
+                        v-if="get_active_filter_forms_count() > 0"
+                      >
+                        <dxy-filter-form
+                          v-for="form in get_active_filter_forms()"
+                          v-bind:key="form.title"
+                          v-bind:form="form"
+                          v-on:filter-form-input="update_filter_forms"
+                        >
+                        </dxy-filter-form>
+                      </template>
+                      <template
+                        v-else
+                      >
+                        <div
+                          class="my-4"
+                        > 
+                          <v-card
+                            raised
+                            style="border-radius: 0px 0px 0px 0px;
+                                   background-color: #F5F5F5;
+                                   !border-top: 12px solid #FFB74D"
+                          >
+                          <v-container
+                              fluid
+                              class="subheading py-4"
+                            >
+                              <v-layout
+                                column
+                                justify-space-between
+                                align-center
+                                class="px-2"
+                              >
+                                <v-flex
+                                  sm12
+                                  style="text-align: center"
+                                >
+                                  <v-icon
+                                    sm12
+                                    class="mb-3"
+                                    color="orange darken-3"
+                                  >
+                                    warning
+                                  </v-icon>
+                                  <div>You have no filters applied.</div>
+                                </v-flex>
+                              </v-layout>
+                            </v-container>
+                          </v-card>
+                        </div>
+                      </template>
+                    </div>
+                  </v-flex>
+                </v-layout>
+              </v-card>
+            </v-flex>
+
+            <!--=============================================================-->
+            <!--=============================================================-->
+            <!--=============================================================-->
+            <!-- results -->
+            <!--=============================================================-->
+            <!--=============================================================-->
+            <!--=============================================================-->
+            <v-flex
+              d-flex
+              sm12
+              style="!background-color: white"
+              class="pa-4 mt-2"
+            >
+              <v-card
+                raised
+                style="background-color: #FAFAFA; 
+                      height: 80vh;
+                      overflow-y: scroll;
+                      !border-radius: 10px"
+              >
+                <v-layout
+                  row
+                  wrap
+                >
+
+                  <!--=======================================================-->
+                  <!-- results-toolbar -->
+                  <!--=======================================================-->
+                  <v-flex
+                    id="results-toolbar"
+                    sm12
+                    style="position: sticky;
+                          top: 0;
+                          z-index: 1"
+                  >
+                    <v-card
+                      raised
+                      class="pa-2 body-2"
+                      style="height: 55px;
+                             background-color: #062E60;
+                             border-radius: 1px 1px 0px 0px;
+                             color: #FAFAFA"
+                    >
+                      <v-layout
+                        align-center
+                        justify-center
+                        fill-height
+                      >
+                        <v-icon
+                          style="left: 0; 
+                                position: absolute" 
+                          class="ml-2"
+                          color="grey lighten-4"
+                        >
+                          place
+                        </v-icon>
+                        <div>RESULTS</div>
+                      </v-layout>
+                    </v-card>
+                  </v-flex>
+
+                  <!--=======================================================-->
+                  <!-- results-content -->
+                  <!--=======================================================-->
+                  <v-flex
+                    id="results-content"
+                    sm12
+                    class="px-3"
+                    justify-center
+                  >
+
+                  <template
+                    v-if="is_debug_enabled"
+                  >
+                    <div
+                      v-for="form in get_active_filter_forms()"
+                      style="word-wrap: break-word"
+                      class="ma-4"
+                    >
+                      {{JSON.stringify(form)}}
+                    </div>
+                  </template>
+
+                  <div
+                    v-if="current_result_state === 'none'"
+                  >
+                    <v-btn
+                        dark
+                        medium
+                        icon
+                        color="grey lighten-4"
+                        v-on:click="query_zips()"
+                      >
+                        <v-icon
+                          color="blue darken-1"
+                        >
+                          send
+                        </v-icon>
+                      </v-btn>
+                      Get Zips
+                  </div>
+
+                  <div
+                    v-else-if="current_result_state === 'fetching'"
+                    class="ma-4"
+                  >
+                    <v-progress-linear :indeterminate="true"></v-progress-linear>
+                  </div>
+
+                  <div
+                    v-else-if="current_result_state === 'result'"
+                    style="word-wrap: break-word"
+                    class="ma-4"
+                  >
+                    <div>
+                      <v-btn
+                        dark
+                        medium
+                        icon
+                        color="grey lighten-4"
+                        v-on:click="query_zips()"
+                      >
+                        <v-icon
+                          color="blue darken-1"
+                        >
+                          autorenew
+                        </v-icon>
+                      </v-btn>
+                      Update Zips
+                    </div>
+                    <v-toolbar>
+                      <v-toolbar-title>
+                        {{num_zips}} zip codes targeted | {{population}} people targeted
+                      </v-toolbar-title>
+                        <v-spacer></v-spacer>
+                        <v-btn
+                          dark
+                          round
+                          color="blue"
+                          v-on:click="download_zips_facebook()"
+                        >
+                        Download Facebook
+                        </v-btn>
+                        <v-btn
+                          dark
+                          round
+                          color="blue"
+                          v-on:click="download_zips_google()"
+                        >
+                        Download Google
+                        </v-btn>
+                    </v-toolbar>
+                    <template>
+                      <v-data-table
+                        :headers="headers"
+                        :items="zips"
+                        :pagination.sync="pagination"
+                        class="elevation-1"
+                      >
+                        <template v-slot:items="props">
+                          <td class="text-xs-center">{{props.item[0]}}</td>
+                          <td class="text-xs-center">{{ props.item[1] }}</td>
+                          <td class="text-xs-center">{{ props.item[2] }}</td>
+                          <td class="text-xs-center">{{ props.item[3] }}</td>
+                        </template>                  
+                      </v-data-table>
+                    </template>
+                  </div>
+
+                  <!-- <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3154.1508702323245!2d-122.39755188481291!3d37.76306047976151!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x808f7fc9793f7df7%3A0x6bd272bd24c2657e!2s267+Texas+St%2C+San+Francisco%2C+CA+94107!5e0!3m2!1sen!2sus!4v1525163001670" width="1140" height="450" frameborder="0" style="border:0" allowfullscreen></iframe> -->
+
+                  </v-flex>
+
+                </v-layout>
+
+              </v-card>
+            </v-flex>
+
+        </v-layout>
+
+        <!--=============================================================-->
+        <!-- normal user settings -->
+        <!--=============================================================-->
+        <v-layout
+          v-else-if="current_app_state === 'normal_user_settings'"
+          column 
+          wrap
+          style="background-color: #EEEEEE"
+          class="px-4 pt-4 pb-3"
+          justify-start
+          align-center
+          fill-height
+        >
+          <v-expansion-panel expand value="[1, 1]"
+          >
+            <!--
+            <v-expansion-panel-content
+              v-if="is_organization_administrator"
+            >
+              <div class="title" slot="header">User Management</div>
+              <v-card>
+                <dxy-user-management
+                  class="px-5 pb-4"
+                  v-bind:organization-name="selected_profile['organizationName']"
+                >
+                </dxy-user-management>
+              </v-card>
+            </v-expansion-panel-content>
+            -->
+            <v-expansion-panel-content
+              v-if="is_organization_administrator"
+            >
+              <div class="title" slot="header">Billing Details</div>
+              <v-card>
+                <div class="px-5 pb-4"><h3><a href="https://www.demandxy.com/contact-us">Contact us</a></h3></div>
+              </v-card>
+            </v-expansion-panel-content>
+            <v-expansion-panel-content
+            >
+              <div class="title" slot="header">Change Password</div>
+              <v-card>
+                <dxy-change-password
+                  class="px-5 pb-4"
+                >
+                </dxy-change-password>
+              </v-card>
+            </v-expansion-panel-content>
+          </v-expansion-panel>
+        </v-layout>
+
+      </v-content>
+
+    </v-app>
+  </div>
+
+  <!--=======================================================================-->
+  <!--=======================================================================-->
+  <!--=======================================================================-->
+  <!-- dxy-filter -->
+  <!--=======================================================================-->
+  <!--=======================================================================-->
+  <!--=======================================================================-->
+
+  <script type="text/x-template" id="dxy-filter">
+    <div
+      class="mt-2 mb-2"
+    >
+      <!-- Group -->
+      <template v-if="filter.children">
+        <v-list-tile
+          v-bind:style="get_style()"
+          v-on:click="toggle_filter_expansion()"
+        >
+          <!-- <v-icon medium>{{get_expansion_icon()}}</v-icon> -->
+
+          <v-icon medium class="mx-1" v-bind:color="icon_color">{{filter.icon}}</v-icon>
+          <v-list-tile-content class="ml-3">
+            <v-list-tile-title>{{filter.title}}</v-list-tile-title>
+          </v-list-tile-content>
+          <v-spacer></v-spacer>
+          <v-icon medium v-bind:color="icon_color">{{get_expansion_icon()}}</v-icon>
+        </v-list-tile>
+        <template v-if="is_expanded === true">
+          <dxy-filter
+            v-for="child_filter in filter.children"
+            v-bind:key="child_filter.title"
+            v-bind:filter="child_filter"
+            v-bind:depth="depth+1"
+            v-bind:filter-forms="filterForms"
+            v-on:filter-form-input="$emit('filter-form-input', $event, 'is_active')"
+          >
+          </dxy-filter>
+        </template>
+      </template>
+      <!-- Percent -->
+      <template v-else-if="filter.type === `percent`">
+        <div
+        >
+          <v-card
+            v-bind:style="get_style()"
+            flat
+          >
+            <v-container
+              fluid
+            >
+              <v-layout
+                row
+                justify-space-between
+                align-center
+                class="px-2"
+              >
+                <v-flex
+                  sm9
+                >
+                {{filter.title}}
+                </v-flex>
+                <div>
+                  <v-switch
+                    v-bind:color="is_active_color.name"
+                    hide-details
+                    v-model="form.is_active"
+                    v-on:change="$emit('filter-form-input', form, 'is_active')"
+                  ></v-switch>
+                </div>
+              </v-layout>
+            </v-container>
+          </v-card>
+        </div>
+      </template>
+      <!-- Multiselect -->
+      <template v-else-if="filter.type === `multiselect`">
+          <div
+          >
+            <v-card
+              v-bind:style="get_style()"
+              flat
+            >
+              <v-container
+                fluid
+              >
+                <v-layout
+                  row
+                  justify-space-between
+                  align-center
+                  class="px-2"
+                >
+                  <v-flex
+                    sm9
+                  >
+                  {{filter.title}}
+                  </v-flex>
+                  <div>
+                    <v-switch
+                      v-bind:color="is_active_color.name"
+                      hide-details
+                      v-model="form.is_active"
+                      v-on:change="$emit('filter-form-input', form, 'is_active')"
+                    ></v-switch>
+                  </div>
+                </v-layout>
+              </v-container>
+            </v-card>
+          </div>
+        </template>
+      <!-- Percent and Percentile and Absolute Filters -->
+      <template v-else-if="filter.type === `percent_and_percentile` || filter.type === `absolute`">
+          <div
+          >
+            <v-card
+              v-bind:style="get_style()"
+              flat
+            >
+              <v-container
+                fluid
+              >
+                <v-layout
+                  row
+                  justify-space-between
+                  align-center
+                  class="px-2"
+                >
+                  <v-flex
+                    sm9
+                  >
+                  {{filter.title}}
+                  </v-flex>
+                  <div>
+                    <v-switch
+                      v-bind:color="is_active_color.name"
+                      hide-details
+                      v-model="form.is_active"
+                      v-on:change="$emit('filter-form-input', form, 'is_active')"
+                    ></v-switch>
+                  </div>
+                </v-layout>
+              </v-container>
+            </v-card>
+          </div>
+        </template>
+      <!-- Other Primitive -->
+      <template v-else>
+        <v-list-tile
+          v-bind:style="get_style()"
+        >
+          <v-list-tile-content>
+            <v-list-tile-title>{{filter.title}}</v-list-tile-title>
+          </v-list-tile-content>
+          <v-spacer></v-spacer>
+          <v-icon v-if="filter.type !== `group`" class="mr-4">edit</v-icon>
+          <v-icon v-if="filter.type !== `group`" class="mr-4">check_box</v-icon>
+        </v-list-tile>
+      </template> 
+    </div>
+  </script>
+
+  <!--=======================================================================-->
+  <!--=======================================================================-->
+  <!--=======================================================================-->
+  <!-- dxy-filter-form -->
+  <!--=======================================================================-->
+  <!--=======================================================================-->
+  <!--=======================================================================-->
+
+  <script type="text/x-template" id="dxy-filter-form">
+    <div
+      class="my-4"
+    >
+      <v-card
+        raised
+        style="border-radius: 0px 0px 0px 0px"
+      >
+        <v-container
+          fluid
+          style="cursor: pointer"
+          v-bind:style="form_header_style"
+          v-on:click="toggle_is_expanded()"
+          v-on:mouseout="is_mouse_over_header = false"
+          v-on:mouseover="is_mouse_over_header = true"
+          class="subheading py-4"
+        >
+          <v-layout
+            column
+            justify-space-between
+            align-start
+            class="px-2"
+          >
+            <v-flex
+              sm12
+            >
+              {{form.title}}
+            </v-flex>
+          </v-layout>
+        </v-container>
+        <v-layout
+          v-if="is_expanded && form.type == `percent`"
+          v-bind:style="form_body_style"
+          row
+          wrap
+          justify-center
+          align-start
+        >
+          <v-flex
+            sm12
+          >
+            <v-layout
+              justify-center
+              align-center
+              class="py-3"
+              style="!background-color: blue"
+            >
+              <div>
+                ABSOLUTE:
+              </div>
+              <input
+                type="text"
+                style="font-size:18px;
+                      padding:5px;
+                      border:none;
+                      border-bottom:1px solid #757575;
+                      text-align: center;
+                      color: #757575"
+                class="mx-4 body-2"
+                v-model="return_form.absolute.lower_value"
+                v-on:focus=""
+                v-on:change="$emit('filter-form-input', return_form, 'absolute')"
+              >
+              </input>
+              <input
+                type="text"
+                style="font-size:18px;
+                      padding:5px;
+                      border:none;
+                      border-bottom:1px solid #757575;
+                      text-align: center;
+                      color: #757575"
+                class="mx-4 body-2"
+                v-model="return_form.absolute.upper_value"
+                v-on:focus=""
+                v-on:change="$emit('filter-form-input', return_form, 'absolute')"
+              >
+              </input>
+            </v-layout>
+          </v-flex>
+          <v-flex
+            sm12
+          >
+            <v-layout
+              justify-center
+              align-center
+              class="py-3"
+              style="!background-color: blue"
+            >
+              <div>
+                PERCENTILE:
+              </div>
+              <input
+                type="text"
+                style="font-size:18px;
+                      padding:5px;
+                      border:none;
+                      border-bottom:1px solid #757575;
+                      text-align: center;
+                      color: #757575"
+                class="mx-4 body-2"
+                v-model="return_form.percentile.lower_value"
+                v-on:focus=""
+                v-on:change="$emit('filter-form-input', return_form, 'percentile')"
+              >
+              </input>
+              <input
+                type="text"
+                style="font-size:18px;
+                      padding:5px;
+                      border:none;
+                      border-bottom:1px solid #757575;
+                      text-align: center;
+                      color: #757575"
+                class="mx-4 body-2"
+                v-model="return_form.percentile.upper_value"
+                v-on:focus=""
+                v-on:change="$emit('filter-form-input', return_form, 'percentile')"
+              >
+              </input>
+            </v-layout>
+          </v-flex>
+        </v-layout>
+        <!-- Percent and Percentile Form -->
+        <v-layout
+          v-if="is_expanded && form.type == `percent_and_percentile`"
+          v-bind:style="form_body_style"
+          row
+          wrap
+          justify-center
+          align-start
+        >
+          <v-flex
+            sm12
+          >
+            <v-layout
+              align-left
+              class="py-3"
+              style="!background-color: blue"
+            >
+              <div class="px-2 mx-2">
+              <v-radio-group column v-model="return_form.table_type" v-on:change="$emit('filter-form-input', return_form, 'percent_and_percentile')">
+                <v-tooltip top>
+                  <template v-slot:activator="{ on }">
+                    <v-radio label="Percentile" value="PercentileData" v-on="on"></v-radio>
+                  </template>
+                  <span>Finds all zip codes with percentage in the range specified.</span>
+                </v-tooltip>
+                <v-tooltip top>
+                  <template v-slot:activator="{ on }">    
+                    <v-radio label="Percent" value="AbsoluteData" v-on="on"></v-radio>
+                  </template>All zipcodes are percentile ranked and then the range specified is applied.</span>
+                </v-tooltip>
+              </v-radio-group>
+              </div>
+              <v-divider vertical inset></v-divider>
+              <v-card-text>
+                  <v-layout row class="px-2 mx-2">
+                    <v-flex
+                      shrink
+                      style="width: 100px"
+                    >
+                      <v-text-field
+                        v-model="return_form.range[0]"
+                        label="Min"
+                        type="number"
+                        v-on:change="$emit('filter-form-input', return_form, 'percent_and_percentile')"
+                      ></v-text-field>
+                    </v-flex>
+                    <v-flex class="px-3">
+                      <v-range-slider
+                        v-model="return_form.range"
+                        :max="return_form.maximum_value"
+                        :min="return_form.minimum_value"
+                        v-on:change="$emit('filter-form-input', return_form, 'percent_and_percentile')"
+                      ></v-range-slider>
+                    </v-flex>
+                    <v-flex
+                      shrink
+                      style="width: 100px"
+                    >
+                      <v-text-field
+                        v-model="return_form.range[1]"
+                        label="Max"
+                        type="number"
+                        v-on:change="$emit('filter-form-input', return_form, 'percent_and_percentile')"
+                      ></v-text-field>
+                    </v-flex>
+                  </v-layout>
+                </v-card-text>
+            </v-layout>
+          </v-flex>
+        </v-layout>
+        <!-- Multiselect Form -->
+        <v-layout
+          v-if="is_expanded && form.type == `multiselect`"
+          v-bind:style="form_body_style"
+          row
+          wrap
+          justify-center
+          align-start
+        >
+          <v-flex
+            sm12
+          >
+            <v-layout
+              align-left
+              class="py-3"
+              style="!background-color: blue"
+            >
+              <v-select
+                class="pa-2 ma-2"
+                v-model="return_form.selected_values"
+                :items="form.select_values"
+                :label="form.select_title"
+                multiple
+                chips
+                v-on:change="$emit('filter-form-input', return_form, 'multiselect')"
+              ></v-select>
+            </v-layout>
+          </v-flex>
+        </v-layout>
+                <!-- Absolute Form -->
+                <v-layout
+                v-if="is_expanded && form.type == `absolute`"
+                v-bind:style="form_body_style"
+                row
+                wrap
+                justify-center
+                align-start
+              >
+                <v-flex
+                  sm12
+                >
+                <div class="pa-2 ma-2">Adjust the slider to set the min and max values.</div>
+                <v-layout
+                align-left
+                class="py-3"
+                style="!background-color: blue"
+              >
+                <div class="px-2 mx-2">
+                <v-radio-group column v-model="return_form.table_type" v-on:change="change_table_type">
+                  <v-tooltip top>
+                    <template v-slot:activator="{ on }">
+                      <v-radio label="Percentile" value="PercentileData" v-on="on"></v-radio>
+                    </template>
+                    <span>Finds all zip codes with a value in the range specified.</span>
+                  </v-tooltip>
+                  <v-tooltip top>
+                    <template v-slot:activator="{ on }">    
+                      <v-radio label="Absolute" value="AbsoluteData" v-on="on"></v-radio>
+                    </template>All zipcodes are percentile ranked and then the range specified is applied.</span>
+                  </v-tooltip>
+                </v-radio-group>
+                </div>
+                <v-divider vertical inset></v-divider>
+                <v-card-text>
+                    <v-layout row class="px-2 mx-2">
+                      <v-flex
+                        shrink
+                        style="width: 100px"
+                      >
+                        <v-text-field
+                          v-model="return_form.range[0]"
+                          label="Min"
+                          type="number"
+                          v-on:change="$emit('filter-form-input', return_form, 'absolute')"
+                        ></v-text-field>
+                      </v-flex>
+                      <v-flex class="px-3">
+                        <v-range-slider
+                          v-model="return_form.range"
+                          :max="return_form.maximum_value"
+                          :min="return_form.minimum_value"
+                          v-on:change="$emit('filter-form-input', return_form, 'absolute')"
+                        ></v-range-slider>
+                      </v-flex>
+                      <v-flex
+                        shrink
+                        style="width: 100px"
+                      >
+                        <v-text-field
+                          v-model="return_form.range[1]"
+                          label="Max"
+                          type="number"
+                          v-on:change="$emit('filter-form-input', return_form, 'absolute')"
+                        ></v-text-field>
+                      </v-flex>
+                    </v-layout>
+                  </v-card-text>
+              </v-layout>
+                </v-flex>
+              </v-layout>
+      </v-card>
+    </div>
+  </script>
+ 
+  <script src="https://unpkg.com/vue/dist/vue.js"></script>
+ <script src="https://unpkg.com/vuetify@1.5.16/dist/vuetify.js"></script>
+  <script src="https://www.papaparse.com/resources/js/papaparse.js"></script>
+
+  <script>
+
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    // Query Script Constructor
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+
+    const BUILD_VALUE_QUERY = function(form) {
+      const class_access = "test()"
+
+      if(form.type == `multiselect` && form.selected_values != undefined) {
+        let value = "('" + form.selected_values.join('\',\'') + "')"
+        let in_query = class_access 
+                        + ".isin(\""
+                        + String(value)
+                        + "\",\""
+                        + String(form.field_name)
+                        + "\",\""
+                        + String('AbsoluteData')
+                        + "\")"
+        return in_query
+      }
+      else {
+      let above_query = class_access
+                        + ".above(\""
+                        + String(form.lower_value)
+                        + "\",\""
+                        + String(form.field_name)
+                        + "\",\""
+                        + String(form.table_type)
+                        + "\")"
+      let below_query = class_access
+                        + ".below(\""
+                        + String(form.upper_value)
+                        + "\",\""
+                        + String(form.field_name)
+                        + "\",\""
+                        + String(form.table_type)
+                        + "\")"
+      let intersection_query = class_access
+                               + ".zipAnd("
+                               + above_query
+                               + ","
+                               + below_query
+                               + ")"
+      return intersection_query
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    // Constants
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    const NAVIGATION = {
+      is_active: false,
+      items: [
+        {
+          icon: "home",
+          title: "Home",
+        },
+        {
+          icon: "account_box",
+          title: "Account",
+        },
+        {
+          icon: "credit_card",
+          title: "Payment",
+        },
+        {
+          icon: "help",
+          title: "Help",
+        },
+      ]
+    }
+
+    const FILTER_TYPE_PERCENT_AND_PERCENTILE = "percent_and_percentile"
+    const FILTER_TYPE_PERCENT = "percent"
+    const FILTER_TYPE_STATES = "states"
+    const FILTER_TYPE_MULTISELECT = "multiselect"
+    const FILTER_TYPE_ABSOLUTE = "absolute"
+
+    const FILTER_TREE = 
+    //////////////////////////////////////////////////
+    // Root
+    //////////////////////////////////////////////////
+    {
+      title: "Root",
+      children: [
+        //////////////////////////////////////////////////
+        // Demographics
+        //////////////////////////////////////////////////
+        {
+          title: "Demographics",
+          icon: "people",
+          children: [
+            {
+              title: "Age",
+              children: [
+                {
+                  title: "% Age 0-18",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE,
+                  field_name: "p0to18"
+                },
+                {
+                  title: "% Age 18-24",
+                  field_name: "p18to24",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Age 25-34",
+                  field_name: "p25to34",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Age 35-44",
+                  field_name: "p35to44",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Age 45-54",
+                  field_name: "p45to54",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Age 55-64",
+                  field_name: "p55to64",
+                  type: FILTER_TYPE_PERCENT
+                },
+                {
+                  title: "% Age 65+",
+                  field_name: "p65plus",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "Median Age",
+                  field_name: "Median_Age",
+                  type: FILTER_TYPE_ABSOLUTE,
+                  minimum_value: 3.9,
+                  maximum_value: 89.5
+                }
+              ]
+            },
+            {
+              title: "Citizenship",
+              children: [
+                {
+                  title: "% Citizens",
+                  field_name: "pCitizen",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                }
+              ]
+            },
+            {
+              title: "Gender",
+              children: [
+                {
+                  title: "% Male",
+                  field_name: "pMale",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Female",
+                  field_name: "pFemale",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                }
+              ]
+            },
+            {
+              title: "Language Spoken at Home",
+              children: [
+                {
+                  title: "% English",
+                  field_name: "pEnglishHomes",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Spanish",
+                  field_name: "pSpanishHomes",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Other Indo-European",
+                  field_name: "pIndoEuropeHomes",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Asian or Pacific Island",
+                  field_name: "pAsianPacifcHomes",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                }
+              ]
+            },
+            {
+              title: "Marriage",
+              children: [
+                {
+                  title: "% Married",
+                  field_name: "pMarried",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Widowed",
+                  field_name: "pWidowed",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Divorced",
+                  field_name: "pDivorced",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Separated",
+                  field_name: "pSeparated",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Never Married",
+                  field_name: "pNeverMarried",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                }
+              ]
+            },
+            {
+              title: "Race & Ethnicity",
+              children: [
+                {
+                  title: "% White",
+                  field_name: "pWhite",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Black",
+                  field_name: "pBlack",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Asian",
+                  field_name: "pAsian",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Other race or mixed",
+                  field_name: "pOtherRace",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% American Indian or Alaska Native",
+                  field_name: "pAmericanIndian",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Hispanic or Latino",
+                  field_name: "pHispanicLatino",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Native Hawaiian and Other Pacific Islander",
+                  field_name: "pNativeHawaiianPacificIslander",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                }
+              ]
+            }
+          ]
+        },
+
+        //////////////////////////////////////////////////
+        // Education
+        //////////////////////////////////////////////////
+        {
+          title: "Education",
+          icon: "school",
+          children: [
+            {
+              title: "Educational Attainment",
+              children: [
+                {
+                  title: "% with Bachelors Degree",
+                  field_name: "pBachelorsPlus",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% with High School Degree",
+                  field_name: "pHighSchoolPlus",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                }
+              ]
+            },
+            {
+              title: "College Campuses",
+              field_name: "College",
+              type: FILTER_TYPE_MULTISELECT,
+              select_values: ["Arizona State UniversitySkysong",
+                "Auburn University",
+                "Baker College",
+                "Bakersfield College",
+                "Ball State University",
+                "Baylor University",
+                "Bowling Green State UniversityMain Campus",
+                "Brigham Young UniversityIdaho",
+                "Broward College",
+                "California State Polytechnic UniversityPomona",
+                "California State UniversityEast Bay",
+                "California State UniversityFullerton",
+                "California State UniversityLos Angeles",
+                "California State UniversityNorthridge",
+                "California State UniversitySacramento",
+                "California State UniversitySan Bernardino",
+                "Clemson University",
+                "Cleveland State University",
+                "College of Southern Nevada",
+                "Columbia University in the City of New York",
+                "Cornell University",
+                "CUNY Bernard M Baruch College",
+                "CUNY Brooklyn College",
+                "CUNY City College",
+                "CUNY Hunter College",
+                "CUNY New York City College of Technology",
+                "CUNY Queens College","DePaul University",
+                "East Carolina University",
+                "Eastern Florida State College",
+                "Eastern Kentucky University",
+                "Eastern Michigan University",
+                "Florida Atlantic University",
+                "Florida Gulf Coast University",
+                "Florida SouthWestern State College",
+                "Florida State College at Jacksonville",
+                "Foothill College","Fordham University",
+                "George Mason University",
+                "George Washington University",
+                "Georgetown University",
+                "Georgia Institute of TechnologyMain Campus",
+                "Georgia Southern University",
+                "Georgia State University",
+                "Grand Valley State University",
+                "Indian River State College",
+                "Indiana UniversityBloomington",
+                "Indiana UniversityPurdue UniversityIndianapolis",
+                "Iowa State University",
+                "James Madison University",
+                "Johns Hopkins University",
+                "Kansas State University",
+                "Keiser UniversityFt Lauderdale",
+                "Kennesaw State University",
+                "Lamar University",
+                "Louisiana State University and Agricultural & Mechanical College",
+                "Loyola University Chicago",
+                "Miami Dade College",
+                "Miami UniversityOxford",
+                "Middle Tennessee State University",
+                "Minnesota State UniversityMankato",
+                "Mississippi State University",
+                "Modesto Junior College",
+                "Montclair State University",
+                "National University",
+                "New York University",
+                "Northeastern University",
+                "Northern Arizona University",
+                "Northern Illinois University",
+                "Nova Southeastern University",
+                "Oakland University",
+                "Ohio State UniversityMain Campus",
+                "Ohio UniversityMain Campus",
+                "Oklahoma State UniversityMain Campus",
+                "Oregon State University",
+                "Palm Beach State College",
+                "Pennsylvania State UniversityMain Campus",
+                "Portland State University",
+                "Purdue UniversityMain Campus",
+                "Rio Hondo College",
+                "Rochester Institute of Technology",
+                "Rutgers UniversityNew Brunswick",
+                "Saint Cloud State University",
+                "Saint Louis University",
+                "Sam Houston State University",
+                "San Diego Mesa College",
+                "San Francisco State University",
+                "Santa Ana College",
+                "Santa Fe College",
+                "Santa Monica College",
+                "Seminole State College of Florida",
+                "Southern Illinois UniversityCarbondale",
+                "Southern New Hampshire University",
+                "St Petersburg College",
+                "Stanford University",
+                "Stony Brook University",
+                "SUNY at Albany",
+                "SUNY at Binghamton",
+                "Temple University",
+                "Texas State University",
+                "The University of Texas at Arlington",
+                "The University of Texas at Austin",
+                "The University of Texas at Dallas",
+                "The University of Texas at San Antonio",
+                "The University of Texas Rio Grande Valley",
+                "Towson University",
+                "Troy University",
+                "University of Arkansas",
+                "University of CaliforniaBerkeley",
+                "University of CaliforniaDavis",
+                "University of CaliforniaLos Angeles",
+                "University of CaliforniaSanta Cruz",
+                "University of Central Oklahoma",
+                "University of Chicago",
+                "University of Delaware",
+                "University of Georgia",
+                "University of Hawaii at Manoa",
+                "University of Illinois at Chicago",
+                "University of Illinois at UrbanaChampaign",
+                "University of Iowa",
+                "University of Kansas",
+                "University of Kentucky",
+                "University of Louisiana at Lafayette",
+                "University of MarylandCollege Park",
+                "University of MarylandUniversity College",
+                "University of MassachusettsBoston",
+                "University of MassachusettsLowell",
+                "University of Memphis",
+                "University of Miami",
+                "University of MichiganAnn Arbor",
+                "University of MinnesotaTwin Cities",
+                "University of Mississippi",
+                "University of MissouriKansas City",
+                "University of MissouriSt Louis",
+                "University of New HampshireMain Campus",
+                "University of New MexicoMain Campus",
+                "University of North Carolina Wilmington",
+                "University of North Florida","University of OklahomaNorman Campus","University of Oregon","University of Pennsylvania","University of PittsburghPittsburgh Campus","University of South Alabama","University of South CarolinaColumbia","University of South FloridaMain Campus","University of Southern California","University of Toledo","University of Utah","University of VirginiaMain Campus","University of WashingtonSeattle Campus","University of WisconsinMadison","Utah Valley University","Valencia College","Vincennes University","Washington State University","Washington University in St Louis","Wayne State University","West Chester University of Pennsylvania","Western Kentucky University","Western Michigan University","Western Washington University","Wilmington University"],
+              select_title: "Select colleges to target"
+            }
+          ]
+        },
+
+        //////////////////////////////////////////////////
+        // Elections
+        //////////////////////////////////////////////////
+        {
+          title: "Elections",
+          icon: "poll",
+          children: [
+            {
+              title: "2008 Presidential",
+              children: [
+                {
+                  title: "% Voting Democrat",
+                  field_name: "pDem2008",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Voting Republican",
+                  field_name: "pGOP2008",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Voting Other",
+                  field_name: "pOther2008",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                }
+              ]
+            },
+            {
+              title: "2012 Presidential",
+              children: [
+                {
+                  title: "% Voting Democrat",
+                  field_name: "pDem2012",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Voting Republican",
+                  field_name: "pGOP2012",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Voting Other",
+                  field_name: "pOther2012",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                }
+              ]
+            },
+            {
+              title: "2016 Presidential",
+              children: [
+                {
+                  title: "% Voting Democrat",
+                  field_name: "pDem2016",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Voting Republican",
+                  field_name: "pGOP2016",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Voting Other",
+                  field_name: "pOther2016",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                }
+              ]
+            }
+          ]
+        },
+
+        //////////////////////////////////////////////////
+        // Employment & Economics
+        //////////////////////////////////////////////////
+        {
+          title: "Employment & Income",
+          icon: "work",
+          children: [
+            {
+              title: "Commute",
+              children: [
+                {
+                  title: "% Drive to Work",
+                  field_name: "pDrove",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Walk to Work",
+                  field_name: "pWalked",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Carpool",
+                  field_name: "pCarpool",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Work from Home",
+                  field_name: "pWorkFromHome",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Other Transportation",
+                  field_name: "pOtherTransport",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Public Transport",
+                  field_name: "pPublicTransport",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                }
+              ]
+            },
+            {
+              title: "Employment Rate",
+              children: [
+                {
+                  title: "% of Population in Labor Force",
+                  field_name: "pInLaborForce",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                }
+              ]
+            },
+            {
+              title: "Income",
+              children: [
+                {
+                  title: "% of Population Below Poverty Line",
+                  field_name: "pbPovertyLine",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "Median Household Income",
+                  field_name: "Median_Household_Income",
+                  type: FILTER_TYPE_ABSOLUTE,
+                  minimum_value: 2500,
+                  maximum_value: 250000
+                }
+              ]
+            },
+            {
+              title: "Insurance",
+              children: [
+                {
+                  title: "% With Health Insurance Coverage",
+                  field_name: "pwHealthInsurance",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% With Public Health Insurance",
+                  field_name: "pwPublicHealthInsurance",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% With Private Health Insurance",
+                  field_name: "pwPrivateHealthInsurance",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% Without Health Insurance Coverage",
+                  field_name: "pwoHealthInsurance",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                }
+              ]
+            },
+            {
+              title: "Occupation",
+              children: [
+                {
+                  title: "% in Arts, Entertainment, & Recreation",
+                  field_name: "pAER",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% in Transportation, Warehousing, and Utitlities",
+                  field_name: "pTWU",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% in Professional Scientific and Management Services",
+                  field_name: "pPSMS",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% in Agriculture, Forestry, Fishing, and Hunting and Mining",
+                  field_name: "pAFFHM",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% in Educational Services and Health Care and Social Assistance",
+                  field_name: "pEHSESA",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% in Finance, Insurance, Real Estate, and Rental and Leasing",
+                  field_name: "pFIRERL",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% in Information",
+                  field_name: "pInformation",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% in Public Administration",
+                  field_name: "pPublicAdmin",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% in Retail Trade",
+                  field_name: "pRetailTrade",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% in Construction",
+                  field_name: "pConstruction",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% in Manufacturing",
+                  field_name: "pManufacturing",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% in Other Services",
+                  field_name: "pOtherServices",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                },
+                {
+                  title: "% in Wholesale Trade",
+                  field_name: "pWholesaleTrade",
+                  type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+                }
+              ]
+            },
+          ]
+        },
+        //////////////////////////////////////////////////
+        // Geography
+        //////////////////////////////////////////////////
+        {
+          title: "Geography",
+          icon: "room",
+          children: [
+            {
+              title: "States",
+              field_name: "State",
+              type: FILTER_TYPE_MULTISELECT,
+              select_values: [
+                'AK','AL','AR','AZ','CA','CO','CT','DC','DE','FL',
+                'GA','HI','IA','ID','IL','IN','KS','KY','LA','MA','MD',
+                'ME','MI','MN','MO','MS','MT','NC','ND','NE','NH',
+                'NJ','NM','NV','NY','OH','OK','OR','PA','RI','SC',
+                'SD','TN','TX','UT','VA','VT','WA','WI','WV','WY'
+              ],
+              select_title: "Select states to target"
+            },
+            {
+              title: "Urban / Rural",
+              field_name: "UrbanRural",
+              type: FILTER_TYPE_MULTISELECT,
+              select_values: ['Urban','Rural'],
+              select_title: "Select development type to target"
+            }
+          ]
+        },
+
+        //////////////////////////////////////////////////
+        // Real Estate
+        //////////////////////////////////////////////////
+        {
+          title: "Real Estate (Powered by Zillow)",
+          icon: "home",
+          children: [
+            {
+              title: "Year over Year Home Value Change",
+              field_name: "YoY_ZHVI",
+              type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+            },
+            {
+              title: "5 Year Home Value Index Change",
+              field_name: "5yr_ZHVI",
+              type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+            },
+            {
+              title: "12 Month Homes Sold",
+              field_name: "Sale_Count",
+              type: FILTER_TYPE_ABSOLUTE,
+              minimum_value: 0,
+              maximum_value: 2335
+            },
+            {
+              title: "10 Year Home Value Idex Change",
+              field_name: "_10yr_ZHVI",
+              type: FILTER_TYPE_PERCENT_AND_PERCENTILE
+            },
+            {
+              title: "Zillow Home Value Index",
+              field_name: "Zillow_Home_Value_Index",
+              type: FILTER_TYPE_ABSOLUTE,
+              minimum_value: 22200,
+              maximum_value: 6342600
+            }
+          ]
+        }
+      ]
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    // dxy-filter
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+
+    Vue.component("dxy-filter", {
+      template: "#dxy-filter",
+      props: [
+        "filter",
+        "depth",
+        "filterForms",
+      ],
+      data: function () {
+        // Copy the form that belongs to us from our prop.
+        let form =
+          this.deep_copy(this.filterForms[this.filter.title])
+
+        return {
+          is_expanded: false,
+          is_active: false,
+          max_depth: 2,
+          per_depth_indent_percent: 10,
+          per_depth_indent_pixels: 40,
+          is_active_color: {
+            hex: "#1E88E5",
+            name: "blue darken-1"
+          },
+          group_background_color: "#EEEEEE",
+          primitive_background_color: "#F5F5F5",
+          icon_color: "grey darken-2",
+          form: form,
+        }
+      },
+      computed: {
+      },
+      methods: {
+        deep_copy: function (object) {
+          return JSON.parse(JSON.stringify(object))
+        },
+        get_expansion_icon: function () {
+          // Icons to try:
+          // 1. ["arrow_drop_down", "arrow_drop_up"]
+          // 2. ["add", "remove"]
+          // 3. ["expand_more", "expand_less"]
+          let icon = ""
+          if (this.is_expanded === true) {
+            icon = "remove"
+          } else {
+            icon = "add"
+          }
+          return icon
+        },
+        toggle_filter_expansion: function () {
+          this.is_expanded = !this.is_expanded
+        },
+        get_indent_style: function () {
+          return {
+            // 'margin-left': (this.depth * this.per_depth_indent_pixels) + "px"
+            'margin-left': (this.depth * this.per_depth_indent_percent) + "%"
+          }
+        },
+        get_style: function () {
+          let style = {}
+          Object.assign(style, this.get_indent_style())
+          style["border-radius"] = "1px"
+          if (this.filter.children) {
+            style["color"] = "#212121"
+            if (this.is_expanded) {
+              style["background-color"] = this.group_background_color
+            } else {
+              style["background-color"] = this.group_background_color
+            }
+          }
+          if (this.filter.type == "percent") {
+            style["border-left"] = "10px solid transparent"
+            if (this.form.is_active) {
+              style["background-color"] = this.primitive_background_color
+              style["border-left-color"] = this.is_active_color.hex
+            } else {
+              style["background-color"] = this.primitive_background_color
+              style["border-left-color"] = this.group_background_color
+            }
+          }
+          if (this.filter.type == "multiselect") {
+            style["border-left"] = "10px solid transparent"
+            if (this.form.is_active) {
+              style["background-color"] = this.primitive_background_color
+              style["border-left-color"] = this.is_active_color.hex
+            } else {
+              style["background-color"] = this.primitive_background_color
+              style["border-left-color"] = this.group_background_color
+            }
+          }
+          if (this.filter.type == "percent_and_percentile") {
+            style["border-left"] = "10px solid transparent"
+            if (this.form.is_active) {
+              style["background-color"] = this.primitive_background_color
+              style["border-left-color"] = this.is_active_color.hex
+            } else {
+              style["background-color"] = this.primitive_background_color
+              style["border-left-color"] = this.group_background_color
+            }
+          }
+          if (this.filter.type == "absolute") {
+            style["border-left"] = "10px solid transparent"
+            if (this.form.is_active) {
+              style["background-color"] = this.primitive_background_color
+              style["border-left-color"] = this.is_active_color.hex
+            } else {
+              style["background-color"] = this.primitive_background_color
+              style["border-left-color"] = this.group_background_color
+            }
+          }
+          return style
+        },
+      },
+      created: function () {
+        this.form.type = this.filter.type
+      }
+    })
+
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    // dxy-filter-form
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+
+    Vue.component("dxy-filter-form", {
+      template: "#dxy-filter-form",
+      props: [
+        "form",
+      ],
+      data: function () {
+        let return_form = JSON.parse(JSON.stringify(this.form))
+        // TODO We probably want this to be more programmatic.
+        return_form.is_percentile = true
+        return_form.is_minimum_changed = false
+        return_form.is_maximum_changed = false
+        return_form.absMin = this.form.minimum_value
+        return_form.absMax = this.form.maximum_value
+        return_form.table_type = 'PercentileData'
+        if(return_form.table_type == `AbsoluteData`) {
+          return_form.range = [return_form.absMin, return_form.absMax]
+          return_form.minimum_value = return_form.absMin
+          return_form.maximum_value = return_form.absMax
+        }
+        else {
+          return_form.range = [0,100]
+          return_form.minimum_value = 0
+          return_form.maximum_value = 100
+        }
+        return_form.query = ""
+        return_form.selected_values = []
+        
+        return {
+          // These define the collapsed header style.
+          header_collapsed_text_color: "#212121",
+          header_collapsed_bg_out_color: "#F5F5F5",
+          header_collapsed_bg_over_color: "#F5F5F5",
+          
+          // These define the expanded header style.
+          header_expanded_text_color: "#FAFAFA",
+          header_expanded_bg_out_color: "#1E88E5",
+          header_expanded_bg_over_color: "#1E88E5",
+
+          // This defines the body style.
+          body_bg_color: "#F5F5F5",
+
+          is_expanded: false,
+          is_mouse_over_header: false,
+
+          // The actual form to be submitted.
+          return_form: return_form,
+        }
+      },
+      computed: {
+        form_header_style: function () {
+          let style = {}
+
+          style["color"] = 
+            this.is_expanded ?
+            this.header_expanded_text_color : 
+            this.header_collapsed_text_color
+
+          style["font-weight"] = 
+            this.is_expanded ?
+            400 : 
+            400
+
+          if (this.is_expanded) {
+            style["background-color"] = 
+              this.is_mouse_over_header ?
+              this.header_expanded_bg_over_color :
+              this.header_expanded_bg_out_color
+          } else {
+            style["background-color"]  = 
+              this.is_mouse_over_header ?
+              this.header_collapsed_bg_over_color :
+              this.header_collapsed_bg_out_color
+          }
+
+          style["border-left"] = "24px solid #1E88E5"
+
+          return style
+        },
+        form_body_style: function () {
+          let style = {}
+
+          style["background-color"] = this.body_bg_color
+
+          return style
+        }
+      },
+      methods: {
+        toggle_is_expanded: function () {
+          this.is_expanded = !this.is_expanded
+        },
+        change_table_type: function () {
+          console.log(this.return_form.table_type)
+          if(this.return_form.table_type == `AbsoluteData`) {
+            this.return_form.range = [this.return_form.absMin, this.return_form.absMax]
+            this.return_form.minimum_value = this.return_form.absMin
+            this.return_form.maximum_value = this.return_form.absMax
+          }
+          else {
+            this.return_form.range = [0,100]
+            this.return_form.minimum_value = 0
+            this.return_form.maximum_value = 100
+          }
+        }
+      },
+      created: function () {
+      }
+    })
+
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    // Vue
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    var app = new Vue({
+      el: '#app',
+      data: function () {
+        const vue = this
+        // Copy the children filters from the root of the filter tree.
+        // We don't want to show the root.
+        let filters = this.deep_copy(FILTER_TREE.children)
+
+        // Grab the filter titles.
+        let filter_titles = 
+          this.recurse_find_filter_titles(filters, {
+            real: "",
+            extended: ""
+          })
+
+        // Create our filter forms objects.
+        let filter_forms = {}
+        for (filter_title of this.get_real_filter_titles(filter_titles)) {
+          let filter = this.recurse_get_filter_by_title(filters, filter_title)
+          // Create a new object for this filter's form.
+          filter_forms[filter_title] = {}
+
+          // Assign the filter base properties so we can use these within the
+          // form.
+          Object.assign(filter_forms[filter_title], filter)
+
+          // Add some extra properties that are specific to the form.
+          filter_forms[filter_title].is_active = false
+          filter_forms[filter_title].range = [0,100]
+          filter_forms[filter_title].lower_value = 0
+          filter_forms[filter_title].upper_value = 100
+          filter_forms[filter_title].table_type = 'PercentileData'
+          /*
+          filter_forms[filter_title].absolute = {
+            lower_bound: filter.absolute_lower_bound,
+            upper_bound: filter.absolute_upper_bound,
+            lower_value: filter.absolute_lower_bound,
+            upper_value: filter.absolute_upper_bound
+          }
+          filter_forms[filter_title].percentile = {
+            lower_bound: 0,
+            upper_bound: 100,
+            lower_value: 0,
+            upper_value: 100
+          }
+          // TODO Retrieve the real LUT from the server.
+          filter_forms[filter_title].percentile_to_absolute_lut = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 14693.1, 18157.2, 19958.15, 21033.0, 21761.85, 22271.0, 22949.8, 23594.0, 24138.25, 24628.0, 25078.0, 25417.0, 25743.55, 25982.0, 26250.0, 26502.0, 26750.0, 26969.0, 27188.0, 27411.7, 27701.15, 28055.2, 28393.0, 28750.0, 29058.8, 29329.4, 29688.0, 29971.0, 30139.0, 30300.0, 30447.65, 30605.1, 30742.55, 30880.0, 31024.0, 31167.0, 31290.7, 31440.0, 31583.0, 31716.4, 31852.15, 32000.0, 32140.0, 32259.0, 32400.95, 32583.0, 32865.0, 33194.0, 33522.75, 33843.6, 34168.95, 34505.2, 34868.55, 35110.0, 35323.9, 35530.0, 35739.0, 35940.8, 36157.0, 36394.0, 36647.15, 36875.0, 37143.0, 37423.0, 37840.8, 38333.0, 38755.1, 39211.3, 39773.5, 40156.2, 40417.0, 40703.1, 41037.55, 41359.0, 41727.0, 42084.8, 42511.35, 43416.8, 44348.25, 45250.0, 45972.6, 46746.0, 47826.2, 49355.0, 50435.85, 51299.8, 52218.7, 54016.0, 56542.75, 60211.6, 62658.3, 68637.4, 78974.5, 168750.0]
+          */
+        }
+
+        // Intialize our searched filters array as a deep copy
+        // of our filters array.
+        let searched_filters = this.deep_copy(filters)
+
+        // Get the user info.
+        var user_info = {}
+        var token_payload_cookie = vue.get_cookie_by_name('tokenPayload')
+        if (token_payload_cookie !== undefined)
+        {
+          var decoded_token_payload 
+            = vue.decode_token_payload_cookie(token_payload_cookie)
+          user_info = decoded_token_payload['userInformation']
+        }
+
+        // Get the selected profile.
+        var selected_profile
+          = JSON.parse(decodeURIComponent(vue.get_cookie_by_name('selectedProfile')))
+
+        return {
+          // State stuff.
+          current_app_state: "main",
+          are_luts_loaded: true, // TODO Change this to false later.
+          user_info: user_info,
+          selected_profile: selected_profile,
+
+          // Title.
+          title: "DEMANDXY",
+
+          // Color.
+          color: "grey darken-3",
+
+          // Navigation.
+          navigation: NAVIGATION,
+
+          // Filters.
+          filters: {}, // Initialize this as an empty object, and fill it in when we get all the LUTs.
+          search_query: "",
+          is_showing_suggestions: false,
+          searched_filters: {}, // Initialize this as an empty object, and fill it in when we get all the LUTs.
+          filter_titles: [], // Initialize this as an empty list, then fill it in when get all the LUTs.
+          filter_titles_stage: filter_titles,
+          filter_forms: filter_forms,
+          active_filter_titles: [],
+
+          // Resulting zips.
+          current_result_state: "none", // One of ["none", "result", "result"].
+          zips: [],
+          num_zips: "",
+          population: "",
+
+          // Testing stuff.
+          is_debug_enabled: null,
+          test_icon: "account_box",
+          depth_indent_lut: ["ml-0", "ml-3", "ml-5", "ml-4"],
+          pagination: { 
+            descending: true,
+            page: 1,
+            rowsPerPage: 10,
+            rowsPerPageItems: [5, 10, 20, 50, 100]
+          },
+          headers: [
+            {text: 'Zip Code', align:'center', value:'zip', sortable: false},
+            {text: 'County', align:'center', value:'county', sortable: false},
+            {text: 'State', align:'center', value:'state', sortable: false},
+            {text: 'Population', align:'center', value:'population', sortable: false},
+          ]
+        }
+      },
+      methods: {
+        deep_copy: function (object) {
+          return JSON.parse(JSON.stringify(object))
+        },
+        recurse_find_filter_titles: function (filter_list,
+                                              parent_title) {
+          let filter_titles = []
+          if (parent_title.extended !== "") {
+            parent_title.extended += " / "
+          }
+          for (filter of filter_list) {
+            filter_titles.push({
+              real: filter.title,
+              extended: parent_title.extended + filter.title
+            })
+            if (filter.children) {
+              let children_titles 
+                = this.recurse_find_filter_titles(filter.children,
+                                                  {
+                                                    real: filter.title,
+                                                    extended: filter.title
+                                                  })
+              for (child_title of children_titles) {
+                filter_titles.push({
+                  real: child_title.real,
+                  extended: parent_title.extended + child_title.extended
+                })
+              }
+            }
+          }
+          return filter_titles
+        },
+        get_real_filter_titles: function (filter_titles) {
+          return filter_titles.map(function (element) {
+            return element.real
+          })
+        },
+        get_extended_filter_titles: function (filter_titles) {
+          return filter_titles.map(function (element) {
+            return element.extended
+          })
+        },
+        update_filter_forms: function (form, reason) {
+          if (reason == 'percent_and_percentile') {
+            form.lower_value = form.range[0]/100
+            form.upper_value = form.range[1]/100
+          }
+          if (reason == 'absolute' && form.table_type == 'PercentileData') {
+            form.lower_value = form.range[0]/100
+            form.upper_value = form.range[1]/100
+          }
+          if (reason == 'absolute' && form.table_type == 'AbsoluteData') {
+            form.lower_value = form.range[0]
+            form.upper_value = form.range[1]
+          }
+          // The incoming form is a new version of the
+          // form.
+          // Always create new query string before we
+          // continue.
+          form.query = BUILD_VALUE_QUERY(form)
+
+          console.log(form.query)
+          // Next, We need to check one thing, which is 
+          // whether the form's active state has changed, 
+          // so that we can add it or remove it from the 
+          // active forms sorted list.
+          // The old version of the form is located in
+          // this.filter_forms[form.title].
+          // The new version of the form is located in 
+          // form.
+          let form_old = this.filter_forms[form.title]
+          let form_new = form
+          if ((true === form_new.is_active)
+              && (false === form_old.is_active)) {
+            // This form is becoming active.
+            // Append this form title to our sorted active
+            // titles list.
+            this.active_filter_titles.push(form.title)
+          }
+          else if ((false === form_new.is_active)
+                   && (true === form_old.is_active)) {
+            // This form is becoming inactive.
+            // Remove this form title from our sorted
+            // active titles list.
+            let index_to_remove
+              = this.active_filter_titles.findIndex(function (title) {
+              return title === form.title
+            })
+            this.active_filter_titles.splice(index_to_remove, 1)
+          }
+
+          // Finally, update our master instance of the form.
+          // TODO Determine if using Object.assign is better or
+          //      worse than a JSON-based deep copy.
+          Object.assign(this.filter_forms[form.title], form)
+        },
+        get_active_filter_forms: function () {
+          let active_filter_forms = []
+          for (title of this.active_filter_titles) {
+            active_filter_forms.push(this.filter_forms[title])
+          }
+          return active_filter_forms
+        },
+        get_active_filter_forms_count: function () {
+          let count = 0
+          for (key of Object.keys(this.filter_forms)) {
+            if (this.filter_forms[key].is_active) {
+              count++
+            }
+          }
+          return count
+        },
+        get_active_filter_forms_count_icon: function () {
+          const count_icons = [
+            "filter_none",
+            "filter_1",
+            "filter_2",
+            "filter_3",
+            "filter_4",
+            "filter_5",
+            "filter_6",
+            "filter_7",
+            "filter_8",
+            "filter_9",
+            "filter_9_plus",
+          ]
+          const last_icon = count_icons[count_icons.length - 1]
+          let active_filter_forms_count = 
+            this.get_active_filter_forms_count()
+          let icon = count_icons[active_filter_forms_count]
+          if (!icon) {
+            icon = last_icon
+          }
+          return icon
+        },
+        recurse_get_filter_by_title: function (filter_list,
+                                               title) {
+          // If we find the title in the filter list, return
+          // the filter, otherwise, search the children of the
+          // filters and return the result, if found.
+          let found_filter = null
+          for (filter of filter_list) {
+            if (filter.title === title) {
+              found_filter = filter
+              break
+            } else {
+              if (filter.children) {
+                let child_filter =
+                  this.recurse_get_filter_by_title(filter.children, title)
+                if (child_filter) {
+                  if (child_filter.title === title) {
+                    found_filter = filter
+                    break
+                  }
+                }
+              }
+            }
+          }
+          // When exiting this loop, the found filter is either
+          // the found filter, or null.
+          return found_filter
+        },
+        update_searched_filters: function () {
+          // First map the search query, which is the
+          // extended filter title, to the real
+          // filter title.
+          let queried_title = 
+            this.filter_titles.find(function (element) {
+              return (element.extended === this.search_query)
+            }, this)
+
+          if (queried_title) {
+            queried_title = queried_title.real
+          } else {
+            queried_title = this.search_query
+          }
+
+          // Recurse through the tree until we find the
+          // filter that was searched for. Then we're gonna
+          // return an array containing the subtrees that
+          // satisfy the search. If the search matched
+          // something, then we return an array with only
+          // one tree. Otherwise, the search was invalid
+          // and we return all trees within the root, which
+          // is the default.
+          let searched_filter = 
+            this.recurse_get_filter_by_title(this.filters,
+                                             queried_title)
+          if (searched_filter) {
+            this.searched_filters = [searched_filter]
+          } else {
+            if (queried_title === "") {
+              this.searched_filters = this.deep_copy(this.filters)
+            } else {
+              this.searched_filters = []
+            }
+          }
+        },
+        handle_click: function (event) {
+          var search_bar = document.getElementById('search-bar');
+          if (search_bar) {
+            if (!search_bar.contains(event.target)) {
+              this.is_showing_suggestions = false
+            }
+          }
+        },
+        query_zips: function () {
+          // Set our current result state to fetching.
+          this.current_result_state = "fetching"
+
+          // First we need to gather all the active filter forms
+          // so that we can send a query to the server.
+          let query = []
+          for (active_filter_form of this.get_active_filter_forms()) {
+            query.push({
+              query_string: active_filter_form.query,
+              query_table: active_filter_form.table_type
+              /*filter_type: active_filter_form.type,
+              selected_values: active_filter_form.selected_values,
+              lower_value: active_filter_form.range[0],
+              upper_value: active_filter_form.range[1]*/
+            })
+          }
+          // Fetch the zipcodes using the query.
+          // When the query is resolved, update the number of zipcodes and
+          // change our current result state to result.
+          let app = this
+          fetch("/query/zip", {
+            body: JSON.stringify({query: query, profileType: app.selected_profile.type}),
+            method: "POST",
+            headers: new Headers({'Content-Type': 'application/json'})
+          }).then(function(response){
+            response.text().then(function(text){
+              zips = JSON.parse(text)
+              num_zips = zips.length 
+              var population = 0;
+              var i;
+              for (i=0; i < num_zips; i++) {
+                population += zips[i][3]
+              }
+              app.zips = zips
+              app.num_zips = num_zips.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+              app.population = population.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+              app.current_result_state = "result"
+            })
+          })
+        },
+        download_zips_google: function () {
+          var zips_full = app.zips;
+          var zips = [];
+          for (i = 0; i < zips_full.length; i++) {
+            var zip = [];
+            zip[0] = i+1;
+            zip[1] = zips_full[i][0].concat(", United States");
+            zips[i] = zip;
+          }
+          zips.unshift(["row","zip_code"])
+          var csv = Papa.unparse(zips);
+          var dateNow = new Date();
+          dateNow = dateNow.toLocaleString();
+          var filename = 'zips_google_'.concat(dateNow,".csv");
+          var csvData = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+          if (navigator.msSaveBlob) {
+            csvURL = navigator.msSaveBlob(csvData,filename);
+          }
+          else {
+            csvURL = window.URL.createObjectURL(csvData);
+          }
+          var tempLink = document.createElement('a');
+          tempLink.href = csvURL;
+          tempLink.setAttribute('download',filename);
+          tempLink.click();
+        },
+        download_zips_facebook: function () {
+          var zips_full = app.zips;
+          var zips = [];
+          for (i = 0; i < zips_full.length; i++) {
+            var zip = [];
+            zip[0] = i+1;
+            if (i == zips_full.length) {
+              zips[i] = "US:".concat(zips_full[i][0]);
+            }
+            else {
+              zips[i] = "US:".concat(zips_full[i][0]);
+            }
+          }
+          var txtData = new Blob([zips], {type: 'text/txt;charset=utf-8;'});
+          var dateNow = new Date();
+          dateNow = dateNow.toLocaleString();
+          var filename = 'zips_fb_'.concat(dateNow,".txt");
+          if (navigator.msSaveBlob) {
+            txtURL = navigator.msSaveBlob(txtData,filename);
+          }
+          else {
+            txtURL = window.URL.createObjectURL(txtData);
+          }
+          var tempLink = document.createElement('a');
+          tempLink.href = txtURL;
+          tempLink.setAttribute('download',filename);
+          tempLink.click();
+        },
+        get_cookie_by_name: function (name) {
+          var value = "; " + document.cookie;
+          var parts = value.split("; " + name + "=");
+          if (parts.length == 2) return parts.pop().split(";").shift();
+        },
+        decode_token_payload_cookie: function (token_payload_cookie) {
+          var base64Url = token_payload_cookie;
+          var base64 = base64Url.replace('-', '+').replace('_', '/');
+          return JSON.parse(window.atob(base64));
+        },
+        redirect: function () {
+          var redirect = '/'
+          window.location.href = redirect
+        },
+        log_out: function () {
+          const vue = this
+          document.cookie = "tokenPayload=" + ";path=/"
+          document.cookie = "selectedProfile=" 
+                            + ";path=/"
+                            + ";expires=Thu, 01 Jan 1970 00:00:01 GMT"
+          vue.redirect()
+        },
+        switch_selected_profile: function (profile_descriptor) {
+          var vue = this
+          fetch("/user/set_selected_profile", {
+            body: JSON.stringify({
+              'profileDescriptor': profile_descriptor
+            }),
+            method: "POST",
+            headers: new Headers({'Content-Type': 'application/json'})
+          })
+          .then(function (response) {
+            return response.text();
+          })
+          .then(function (text) {
+            var result = JSON.parse(text);
+            if (result.error) {
+              vue.error = result.error;
+            } else {
+              vue.redirect();
+            }
+          })
+        }
+      },
+      computed: {
+        search_suggestions: function () {
+          let is_included = function (extended_title) {
+            return extended_title.toLowerCase().includes(
+              this.search_query.toLowerCase()
+            )
+          }
+          let suggestions = 
+            this.get_extended_filter_titles(this.filter_titles).filter(
+            is_included, this)
+          return suggestions
+        },
+        is_ready: function () {
+          var vue = this
+          if (vue.are_luts_loaded === true) {
+            return true
+          } else {
+            return false
+          }
+        },
+        is_organization_administrator: function () {
+          var vue = this
+          if (vue.selected_profile.role === 'administrator') {
+            return true
+          } else {
+            return false
+          }
+        },
+        upgrade_setup: function() {
+          window.location.href = '/account_setup'
+        }
+      },
+      mounted: function () {
+        // First we need to gather all the filter forms
+        // and pull out the field names so we can perform a
+        // request for all of the percentile look up tables.
+        // The request object has keys which are the filter
+        // form titles and values which are the field names.
+        // We expect the response to be an object where
+        // keys are the filter form titles and the associated
+        // values are the look up tables.
+        let request =  {}
+        for (filter_title of Object.keys(this.filter_forms)) {
+          if (this.filter_forms[filter_title].field_name) {
+            request[filter_title] = this.filter_forms[filter_title].field_name
+          }
+        }
+
+        // Perform the fetch for the look up tables.
+        // When the fetch resolves, we should have the look up tables
+        // for all of our filter forms. 
+        // Assign these look up tables to the filter forms.
+        // Update the app's filters and search filters objects.
+        /*
+        let app = this
+        fetch("/query/lut", {
+          body: JSON.stringify(request),
+          method: "POST",
+          headers: new Headers({'Content-Type': 'application/json'})
+        }).then(function (response) {
+          response.text().then(function (text) {
+            luts = JSON.parse(text)
+            for (filter_title of Object.keys(luts)) {
+              let form = app.filter_forms[filter_title]
+
+              // Copy the LUT to the form.
+              form.percentile_to_absolute_lut = luts[filter_title]
+
+              // // Initialize the absolute lower and upper values based
+              // // on the percentile extremes.
+              // form.absolute.lower_value
+              //   = form.percentile_to_absolute_lut[form.percentile.lower_value]
+              // form.absolute.upper_value
+              //   = form.percentile_to_absolute_lut[form.percentile.upper_value]
+            }
+          
+            // Update the app's filters now.
+            app.filters = app.deep_copy(FILTER_TREE.children)
+            app.searched_filters = app.deep_copy(app.filters)
+            app.filter_titles = app.deep_copy(app.filter_titles_stage)
+
+            // Now the luts are loaded.
+            app.are_luts_loaded = true
+          })
+        })
+        */
+       // Update the app's filters now.
+       let app = this
+        app.filters = app.deep_copy(FILTER_TREE.children)
+        app.searched_filters = app.deep_copy(app.filters)
+        app.filter_titles = app.deep_copy(app.filter_titles_stage)
+        app.are_luts_loaded = true
+      }
+    })
+
+  </script>
+</body>
+</html>
+
+<script src="change_password.js"></script>
+<script>
+  Vue.component("dxy-change-password", change_password)
+</script>
+
+<script src="user_management.js"></script>
+<script>
+  Vue.component("dxy-user-management", user_management)
+</script>
