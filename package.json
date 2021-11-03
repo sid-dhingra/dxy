@@ -28,7 +28,7 @@
     "ms": "^2.1.1",
     "nodemailer": "^4.6.8",
     "randomstring": "^1.1.5",
-    "validator": "^10.9.0",
+    "validator": "^13.7.0",
     "stripe": "^7.10.0"
   },
   "devDependencies": {
